@@ -75,16 +75,16 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 **Fonti:** [README di Matt](https://github.com/mattpocock/skills) e [README di Superpowers](https://github.com/obra/superpowers), attivi a novembre 2026; [Umar, ottobre 2026](https://umaranis.com/2026/10/25/superpowers-vs-matt-pococks-skills/), nessun vincitore netto; [Eberhardt, ottobre 2026](https://blog.scottlogic.com/2026/10/19/an-honest-review-of-matt-pococks-skills.html), risultati misti.
 
-## 8. Matt come skill, ponytail e ADHD come plugin
+## 8. Matt come skill, ponytail come plugin
 
-**Scelta:** le skill semplici stanno in `~/.agents/skills` per entrambi gli agenti; ponytail e i-have-adhd restano plugin.
+**Scelta:** le skill semplici stanno in `~/.agents/skills` per entrambi gli agenti; ponytail resta plugin.
 
 | Pro | Contro |
 |---|---|
 | Una versione sola per Claude e Gemini | Niente auto-update: serve il ramo Aggiorna |
 | Matt non offre un plugin per Antigravity | Il nome `code-review` coincide con quello integrato in Claude |
 
-**Fonti:** repo `mattpocock/skills` (solo `.claude-plugin/`, controllato l'8/11); migrazione del 7z del 19/10/2026; hook di `i-have-adhd` e `ponytail`.
+**Fonti:** repo `mattpocock/skills` (solo `.claude-plugin/`, controllato l'8/11); migrazione del 7z del 19/10/2026; hook di `ponytail`.
 
 ## 9. Regola dei modelli senza prezzi
 
@@ -201,3 +201,34 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 - `C:\Repos\GIT\app` in `tests/run.py`: è un percorso generico che prova il caso di una cartella chiamata `GIT`.
 
 **Fonti:** rilettura del codice, 8/11/2026.
+
+## 21. Analisi e allineamento di un repo in `SETUP-REPO.md`
+
+**Scelta:** un file separato da `SETUP.md`, che prima analizza memorie e trascrizioni di Claude e Gemini per capire la causa degli errori, poi allinea il repo. Una regola entra in `AGENTS.md` solo come ultima opzione e solo se supera il filtro del passo 6.
+
+| Pro | Contro |
+|---|---|
+| Le regole nascono da prove e cause, e `AGENTS.md` resta corto | Leggere molte trascrizioni costa tempo e quota: non misurato |
+
+**Fonti:** scelta dell'utente, 8/11/2026; `bootstrap.md` di `agents-setup-repo`; skill `/retro` di Matt Pocock; [Anthropic, Memory](https://code.claude.com/docs/en/memory) e [Best practices](https://code.claude.com/docs/en/best-practices); [AGENTS.md](https://agents.md/); [Google, Rules](https://antigravity.google/docs/rules/) e [Hooks](https://antigravity.google/docs/hooks/), lette l'8/11/2026.
+
+## 22. Via `i-have-adhd`
+
+**Scelta:** disinstallato da Claude Code e Antigravity e tolto dal setup. Al suo posto, una regola di stile in `personal/global.md`.
+
+| Pro del toglierlo | Contro del toglierlo |
+|---|---|
+| 7.201 byte di istruzioni in meno in ogni sessione (`SKILL.md` del plugin, misurato l'8/11/2026), e spazio nel budget di 20.000 token delle regole globali di Antigravity | Sparisce il formato con l'azione in prima riga, comodo nelle emergenze: non misurato |
+| Niente conflitto con le spiegazioni complete e le fonti richieste | |
+
+**Fonti:** scelta dell'utente, 8/11/2026; decisione 14 di `pulizia-repo` nel 7z, archivio privato; README del plugin, che non cita studi sull'efficacia, letto l'8/11/2026; [Google, Rules](https://antigravity.google/docs/rules/), letta l'8/11/2026.
+
+## 23. Il setup spiega mentre installa
+
+**Scelta:** prima di installare, l'agente chiede cosa la persona conosce, spiega solo ciò che manca usando `GUIDE.md`, e alla fine propone al massimo 3 idee e raccoglie le sue.
+
+| Pro | Contro |
+|---|---|
+| Un collega impara mentre configura | L'installazione dura di più: non misurato; si può rispondere `salta` |
+
+**Fonti:** scelta dell'utente, 8/11/2026. Nessuna misura.

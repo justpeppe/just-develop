@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/banner.png" alt="just-develop"></p>
+
 # just-develop
 
 Il mio setup di sviluppo con agenti: Claude Code decide e scrive i ticket, Gemini in Antigravity li implementa e li rivede.
@@ -17,6 +19,7 @@ Lo stesso file copre anche `Aggiorna il setup` e `Cerca MCP utili per me`.
 | File | A cosa serve |
 |---|---|
 | [`SETUP.md`](SETUP.md) | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
+| [`SETUP-REPO.md`](SETUP-REPO.md) | Analizza come lavorano gli agenti su un repo e lo allinea |
 | [`flow.md`](flow.md) | Il flusso di lavoro, sempre attivo |
 | [`flow-prompts.md`](flow-prompts.md) | Review, documentazione, Walkthrough, retro |
 | [`GUIDE.md`](GUIDE.md) | Manuale rapido per te |

@@ -7,6 +7,7 @@ Istruzioni per l'agente che configura la macchina dell'utente. Esegui il ramo ri
 | Installare o configurare | [Installa](#installa) |
 | Aggiornare skill, plugin o MCP | [Aggiorna](#aggiorna) |
 | Cercare MCP utili | [Cerca MCP](#cerca-mcp) |
+| Analizzare o allineare un progetto | [`SETUP-REPO.md`](SETUP-REPO.md) |
 
 ## Regole di ogni ramo
 
@@ -16,6 +17,7 @@ Istruzioni per l'agente che configura la macchina dell'utente. Esegui il ramo ri
 - Mostra all'utente le fonti esterne da cui scaricherai e attendi il suo ok: il repo è suo, il codice di queste fonti no.
 - Nei comandi degli hook metti i percorsi tra virgolette (nel JSON `\"`): `REPO` può contenere spazi.
 - Quando un passo dipende dal comportamento di uno strumento, leggi la sua pagina ufficiale e cita pagina e data nel report. Le pagine già controllate sono in `DECISIONS.md`. Ciò che non trovi scritto segnalalo come `non verificato`.
+- Se trovi `i-have-adhd`, non fa più parte del setup (`DECISIONS.md`, decisione 22): dopo il sì dell'utente togli plugin e marketplace da Claude Code, il file `~/.claude/.i-have-adhd-always`, e da Antigravity copia, import in `~/.gemini/GEMINI.md` e voce in `config.json`.
 - I segreti li inserisce l'utente nella configurazione del client. Nel repo finiscono solo i nomi delle variabili.
 - Per Antigravity lavora sui file in `~/.gemini/`. Il comando `agy` da terminale si blocca: quando serve l'app, chiedi all'utente di provare lì.
 
@@ -31,14 +33,21 @@ Unica tabella di ciò che il setup installa e aggiorna.
 | `vercel-labs/skills`: `find-skills` | skill | skill |
 | `https://mintlify.com/docs` | skill | skill |
 | `DietrichGebert/ponytail` | plugin | clone in `~/.gemini/config/plugins/` |
-| `ayghri/i-have-adhd` | plugin | clone in `~/.gemini/config/plugins/` |
 | Server in `REPO/mcp.json` | MCP utente | `~/.gemini/config/mcp_config.json` |
 
-Ponytail e i-have-adhd restano plugin perché i loro hook li tengono sempre attivi. Le altre fonti sono solo skill: la CLI tiene una copia in `~/.agents/skills` e la collega a entrambi gli agenti.
+Ponytail resta plugin perché il suo hook lo tiene sempre attivo. Le altre fonti sono solo skill: la CLI tiene una copia in `~/.agents/skills` e la collega a entrambi gli agenti.
 
 Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrine`, `write-docs`, `aim-higher`. Se ne manca una, elencala nel report finale e continua. Se una di queste esiste in `~/.agents/skills/<nome>` ma non in `~/.claude/skills/<nome>`, collegala lì con un link simbolico (su Windows una junction), altrimenti Claude Code non la vede.
 
 ## Installa
+
+**Prima dei passi, conosci chi installa.** Può essere un collega o un amico che vede tutto questo per la prima volta. Chiedi una cosa alla volta, e accetta `salta`:
+
+- Hai già usato Claude Code o Antigravity? Su cosa lavori?
+- Sai cosa sono skill, plugin, hook, MCP e subagenti? Li hai mai usati?
+- Conosci il lavoro di Matt Pocock, Karpathy o antirez? E la differenza tra vibe coding e lavorare da una spec?
+
+Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md`: spiega cos'è e quando serve, con un esempio preso dal suo lavoro. Chi conosce già un concetto non lo risente. Durante i passi dì cosa stai facendo e a quale concetto corrisponde. Se `personal/global.md` riflette le preferenze di un'altra persona, chiedi cosa tenere prima di importarlo.
 
 1. **Controlla i prerequisiti.** Servono `git`, `node`, `npx`, `PY`, `claude` (2.1.295 o successiva, per `onFailure`) e la cartella `~/.gemini/config`. Mostra la tabella Fonti e i file che modificherai. *Fatto quando* l'utente conferma.
 2. **Fai i backup** di `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude.json`, `~/.gemini/GEMINI.md` e dei file `hooks.json`, `mcp_config.json`, `skills.json`, `config.json` e delle cartelle `rules/`, `agents/`, `knowledge/` in `~/.gemini/config/`, quando esistono. *Fatto quando* ogni file esistente ha la sua copia.
@@ -51,10 +60,10 @@ Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrin
 
    *Fatto quando* ogni skill ha il suo `SKILL.md` in `~/.claude/skills/<nome>` e in `~/.gemini/config/skills/<nome>` e nessun plugin la duplica.
 5. **Installa i plugin.**
-   - Claude Code: `claude plugin marketplace add <owner/repo>`, poi `claude plugin install ponytail@ponytail` e `claude plugin install i-have-adhd@i-have-adhd`. Imposta `extraKnownMarketplaces.<nome>.autoUpdate = true` in `~/.claude/settings.json`.
-   - Antigravity: `git clone --depth 1 https://github.com/<owner/repo> ~/.gemini/config/plugins/<nome>` e `.plugins.<nome>.enabled = true` in `~/.gemini/config/config.json`. In `~/.gemini/GEMINI.md` aggiungi `@[ponytail](<plugins>/ponytail/AGENTS.md)` e `@[i-have-adhd](<plugins>/i-have-adhd/skills/i-have-adhd/SKILL.md)`.
+   - Claude Code: `claude plugin marketplace add <owner/repo>`, poi `claude plugin install ponytail@ponytail`. Imposta `extraKnownMarketplaces.<nome>.autoUpdate = true` in `~/.claude/settings.json`.
+   - Antigravity: `git clone --depth 1 https://github.com/<owner/repo> ~/.gemini/config/plugins/<nome>` e `.plugins.<nome>.enabled = true` in `~/.gemini/config/config.json`. In `~/.gemini/GEMINI.md` aggiungi `@[ponytail](<plugins>/ponytail/AGENTS.md)`.
 
-   *Fatto quando* `claude plugin list` li mostra e le due cartelle esistono.
+   *Fatto quando* `claude plugin list` lo mostra e la cartella esiste.
 6. **Importa le regole.** In `~/.claude/CLAUDE.md` aggiungi `@REPO/shared/global.md`, `@REPO/personal/global.md` e `@REPO/flow.md`. Se trovi import verso un vecchio repo di configurazione, mostrali e sostituiscili dopo il sì dell'utente. *Fatto quando* le tre righe sono presenti una volta sola.
 7. **Configura i guardrail di Claude Code** in `~/.claude/settings.json`:
    - `permissions.deny`: `Bash(git push *)`, `Bash(git merge *)`, `PowerShell(git push *)`, `PowerShell(git merge *)`, `Read(//**/*.ini)`, `Read(//**/.env)`.
@@ -72,7 +81,8 @@ Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrin
     - `PY -I REPO/scripts/sync-from-claude.py --check` esce 0.
     - Chiedi all'utente di aprire Claude Code e controllare con `/` che le skill ci siano, poi di aprire il pannello Customizations di Antigravity e far eseguire `git status` a Gemini.
     - `REPO/hooks/antigravity/block-dangerous-git.log` ha una riga nuova con l'ora della prova: è la prova che l'hook gira.
-11. **Riporta** cosa funziona ora, cosa manca e le skill dell'utente assenti. Proponi il ramo Cerca MCP.
+11. **Riporta** cosa funziona ora, cosa manca e le skill dell'utente assenti. Mostra con il diagramma di `GUIDE.md` come si incastrano i pezzi, e proponi di provare il giro su una piccola modifica reale.
+12. **Rifinisci insieme.** Chiedi cosa vorrebbe cambiare e cosa non è chiaro. In base a ciò che ti ha raccontato proponi al massimo 3 idee, ognuna con pro, contro e fonte, tra cui il ramo Cerca MCP e `SETUP-REPO.md` per un suo progetto. Le sue idee e le tue passano dal filtro del passo 6 di Analizza in `SETUP-REPO.md`. Applica solo ciò che sceglie. *Fatto quando* l'utente sa fare da solo un giro completo o ha scelto di fermarsi.
 
 ## Aggiorna
 
