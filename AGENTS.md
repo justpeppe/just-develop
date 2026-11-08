@@ -1,3 +1,9 @@
+## Repo pubblico
+
+`just-develop` è un setup agentico generico, come le skill di Matt Pocock: chiunque lo installa sulla propria macchina. Claude Code decide e scrive i ticket, Gemini in Antigravity li implementa e li rivede.
+
+Nel repo entra ciò che serve a tutti. Ciò che esiste su una sola macchina (server MCP, percorsi, nomi, account) resta nella configurazione del client di quella macchina.
+
 ## Agent skills
 
 ### Issue tracker

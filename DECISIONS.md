@@ -232,3 +232,14 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | Un collega impara mentre configura | L'installazione dura di più: non misurato; si può rispondere `salta` |
 
 **Fonti:** scelta dell'utente, 8/11/2026. Nessuna misura.
+
+## 24. Il repo è pubblico: ciò che è di una macchina resta su quella macchina
+
+**Scelta:** il repo contiene solo ciò che serve a tutti, come le [skill di Matt Pocock](https://github.com/mattpocock/skills). Scartato un server MCP presente su una sola macchina, proposto durante un'installazione per far passare `--check`.
+
+| Pro | Contro |
+|---|---|
+| Un collega installa senza ereditare percorsi e dati di altri | Ogni macchina registra a mano i propri server |
+| `mcp.json` resta valido su Mac e Windows (decisione 2) | `--check` mostra i server presenti su una sola macchina come avviso e non li controlla |
+
+**Fonti:** scelta dell'utente, 8/11/2026. Nessuna misura.
