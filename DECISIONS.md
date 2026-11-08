@@ -243,3 +243,14 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | `mcp.json` resta valido su Mac e Windows (decisione 2) | `--check` mostra i server presenti su una sola macchina come avviso e non li controlla |
 
 **Fonti:** scelta dell'utente, 8/11/2026. Nessuna misura.
+
+## 25. Il formato dei commit lo controlla un hook
+
+**Scelta:** `attribution` di Claude Code con `commit` e `pr` vuoti e `sessionUrl = false`, e un hook `commit-msg` che accetta solo `tipo(ambito): descrizione`, una riga, al massimo 15 parole, senza `Co-Authored-By`; passano anche `merge: ...` e i messaggi che git scrive da solo per merge e revert. I co-author già presenti nella storia restano.
+
+| Pro | Contro |
+|---|---|
+| La regola vale anche quando un agente la dimentica | Si aggira con `--no-verify` |
+| La storia e i branch condivisi non cambiano | I vecchi co-author restano visibili |
+
+**Fonti:** scelta dell'utente, 8/11/2026; [Anthropic, All settings](https://code.claude.com/docs/en/settings-reference.md) per `attribution`; [Git, githooks](https://git-scm.com/docs/githooks) per `commit-msg`, lette l'8/11/2026. Che l'app desktop rispetti `attribution` è `non verificato`.

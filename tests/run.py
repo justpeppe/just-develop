@@ -249,9 +249,23 @@ with tempfile.TemporaryDirectory() as h:
     # Unlink before the cleanup follows the links.
     for n in ('a', 'b', 'link-c', 'link-c2'): unlink(os.path.join(h, '.claude', 'skills', n))
 
+# The commit-msg hook is the only check on the message format.
+if shutil.which('sh'):
+    with tempfile.TemporaryDirectory() as d:
+        def message_accepted(text):
+            path = os.path.join(d, 'MSG')
+            with open(path, 'w', encoding='utf-8') as f: f.write(text)
+            return subprocess.run(['sh', os.path.join(R, 'hooks', 'git', 'commit-msg'), path], capture_output=True).returncode == 0
+
+        for good in ('feat(flow): aggiunge il setup\n', 'fix(hooks): blocca il push\n\n# commento di git\n', 'merge: porta il lavoro su main\n', "Merge branch 'dev'\n", 'Revert "feat(flow): x"\n'):
+            if not message_accepted(good): fails.append(f'commit-msg: must accept {good!r}')
+        for bad in ('feat: senza ambito\n', 'aggiunge cose\n', 'feat(flow): ' + 'x ' * 16 + '\n', 'feat(flow): ok\n\ncorpo\n', 'feat(flow): ok\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n', 'feat(flow): x Co-Authored-By: y\n', 'Merge stuff\n', 'Revert qualcosa\n'):
+            if message_accepted(bad): fails.append(f'commit-msg: must reject {bad!r}')
+
 # git-scm githooks: a hook without the executable bit is ignored.
-if os.name != 'nt' and not os.access(os.path.join(R, 'hooks', 'git', 'pre-commit'), os.X_OK):
-    fails.append('hooks/git/pre-commit: not executable')
+for hook in ('pre-commit', 'commit-msg'):
+    if os.name != 'nt' and not os.access(os.path.join(R, 'hooks', 'git', hook), os.X_OK):
+        fails.append(f'hooks/git/{hook}: not executable')
 
 # Google's Rules page: each rule file is truncated past 24,000 bytes.
 for rule in ('flow.md', 'shared/global.md', 'personal/global.md'):

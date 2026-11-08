@@ -1,0 +1,17 @@
+#!/bin/sh
+# Format check for every commit message (see AGENTS.md "Commit").
+message=$(git stripspace -s < "$1")
+subject=$(printf '%s\n' "$message" | head -n 1)
+
+printf '%s\n' "$message" | grep -qi 'co-authored-by' && { echo "commit-msg: niente Co-Authored-By"; exit 1; }
+
+[ "$message" = "$subject" ] || { echo "commit-msg: una sola riga, senza corpo"; exit 1; }
+
+# Only the messages git writes by itself skip the format, plus the merge: prefix used with -m.
+case "$subject" in
+  "Merge branch "*|"Merge pull request "*|"Merge remote-tracking branch "*|"Revert \""*|"merge: "?*) exit 0 ;;
+esac
+
+printf '%s\n' "$subject" | grep -Eq '^(feat|fix|refactor|docs|test|chore)\([a-z0-9-]+\): .+' || { echo "commit-msg: il formato è tipo(ambito): descrizione"; exit 1; }
+
+[ "$(printf '%s\n' "${subject#*: }" | wc -w)" -le 15 ] || { echo "commit-msg: al massimo 15 parole dopo i due punti"; exit 1; }

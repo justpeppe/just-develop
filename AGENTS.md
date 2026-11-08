@@ -24,7 +24,7 @@ Gli hook in `hooks/` e `scripts/sync-from-claude.py`: un errore qui spegne i gua
 
 ## Commit
 
-Formato `tipo(ambito): descrizione`. Ambiti: `flow`, `hooks`, `scripts`, `skills`, `mcp`, `docs`, `tests`.
+Formato `tipo(ambito): descrizione`, una sola riga, al massimo 15 parole, senza `Co-Authored-By`. `hooks/git/commit-msg` controlla tutto questo, non l'elenco degli ambiti, e accetta anche `merge: ...` e i messaggi automatici di merge e revert. Ambiti: `flow`, `hooks`, `scripts`, `skills`, `mcp`, `docs`, `tests`.
 
 ## Decisioni
 

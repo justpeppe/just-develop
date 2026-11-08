@@ -51,7 +51,7 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
 
 1. **Controlla i prerequisiti.** Servono `git`, `node`, `npx`, `PY`, `claude` (2.1.295 o successiva, per `onFailure`) e la cartella `~/.gemini/config`. Mostra la tabella Fonti e i file che modificherai. *Fatto quando* l'utente conferma.
 2. **Fai i backup** di `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude.json`, `~/.gemini/GEMINI.md` e dei file `hooks.json`, `mcp_config.json`, `skills.json`, `config.json` e delle cartelle `rules/`, `agents/`, `knowledge/` in `~/.gemini/config/`, quando esistono. *Fatto quando* ogni file esistente ha la sua copia.
-3. **Attiva il controllo pre-commit**, se `REPO` è un repository git: `git -C REPO config core.hooksPath hooks/git`.
+3. **Attiva i controlli git** (`pre-commit` e `commit-msg`), se `REPO` è un repository git: `git -C REPO config core.hooksPath hooks/git`.
 4. **Installa le skill.** Per ogni fonte di tipo skill:
    - Elenca i nomi con `npx -y skills@latest add <fonte> --list`, che non installa nulla, e confrontali con `~/.agents/.skill-lock.json`. Un nome già presente da un'altra fonte verrebbe sovrascritto: chiedi all'utente.
    - Installa con `npx -y skills@latest add <fonte> -g -y -a claude-code -a antigravity -s <nomi>`.
@@ -69,6 +69,7 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
    - `permissions.deny`: `Bash(git push *)`, `Bash(git merge *)`, `PowerShell(git push *)`, `PowerShell(git merge *)`, `Read(//**/*.ini)`, `Read(//**/.env)`.
    - `hooks.PreToolUse`: matcher `Bash|PowerShell`, comando `PY -I REPO/hooks/claude/block-dangerous-git.py`, `"type": "command"`, `"onFailure": "block"`.
    - `env.CLAUDE_CODE_SUBAGENT_MODEL = "sonnet"` e `autoCompactWindow = 400000`.
+   - Chiave di primo livello `attribution` con `commit = ""`, `pr = ""` e `sessionUrl = false`: niente co-author nei commit.
    - Hook git di un setup precedente: mostrali e toglili dopo il sì dell'utente, perché questo li copre.
 8. **Configura i guardrail di Antigravity** in `~/.gemini/config/hooks.json`, con `PreToolUse` in due voci:
    - `git-guardrails`: matcher `run_command`, comando `node REPO/hooks/antigravity/block-dangerous-git.js`.
