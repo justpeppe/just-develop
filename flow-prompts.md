@@ -49,7 +49,7 @@ Prima di scrivere o aggiornare una pagina, l'AI legge i file sorgente e risponde
 ## 3. Formato del Walkthrough fisso in chat a fine ticket
 
 Prima di dare la parola all'utente per la prova manuale:
-1. **Aggiorna il file del ticket in `.scratch/<lavoro>/issues/<NN>-<slug>.md` scrivendo `## Answer`, senza toccare `Status`** (`Status: resolved (<hash>)` si scrive solo dopo il commit) (e aggiorna `.scratch/<lavoro>/map.md` se presente, così il disco resta la memoria condivisa tra Claude Code e Antigravity, evitando che un modello dimentichi cosa ha fatto l'altro).
+1. **Aggiorna il file del ticket in `.scratch/<lavoro>/issues/<NN>-<slug>.md` scrivendo `## Answer`, senza toccare `Status`** (`Status: resolved` si scrive subito prima del commit, con l'ok dell'utente) (e aggiorna `.scratch/<lavoro>/map.md` se presente, così il disco resta la memoria condivisa tra Claude Code e Antigravity, evitando che un modello dimentichi cosa ha fatto l'altro).
 2. **Assicurati che `docs/SUMMARY.md` e le pagine `docs/*.md` toccate siano aggiornate** e verificate dalla review.
 3. **Presenta il Walkthrough del ticket** in italiano semplice (stile `GLOSSARY.md`), seguendo queste **5 sezioni**:
 

@@ -254,3 +254,16 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | La storia e i branch condivisi non cambiano | I vecchi co-author restano visibili |
 
 **Fonti:** scelta dell'utente, 8/11/2026; [Anthropic, All settings](https://code.claude.com/docs/en/settings-reference.md) per `attribution`; [Git, githooks](https://git-scm.com/docs/githooks) per `commit-msg`, lette l'8/11/2026. Che l'app desktop rispetti `attribution` è `non verificato`.
+
+## 26. `Status: resolved` entra nel commit del ticket, e niente `/implement`
+
+**Scelta:** `Status: resolved` si scrive subito prima del commit, senza hash. `/implement` si aggiunge a `/implement-spec` tra le skill da non usare; la skill resta installata, perché una modifica locale si perderebbe all'aggiornamento.
+
+**Perché:** un commit non può contenere il proprio hash, quindi la vecchia regola lasciava il ticket modificato dopo ogni commit. `/implement` termina con un commit, mentre il flusso lo fa solo dopo l'ok dell'utente.
+
+| Pro | Contro |
+|---|---|
+| Il branch resta pulito dopo ogni ticket | L'hash non si legge nel ticket: serve `git log -- <ticket>` |
+| Stato e `## Answer` viaggiano insieme | Il divieto di `/implement` è una regola scritta, nessun hook lo impone |
+
+**Fonti:** scelta dell'utente, 8/11/2026; `implement/SKILL.md` di Matt Pocock, letta l'8/11/2026. Nessuna misura.
