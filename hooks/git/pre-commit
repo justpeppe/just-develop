@@ -1,0 +1,7 @@
+#!/bin/sh
+# Self-check of hooks and scripts before every commit (see AGENTS.md "Verifiche").
+i="${GIT_INDEX_FILE:-.git/index}"; h=$(git hash-object "$i")
+PY=$(command -v python || command -v python3)
+"$PY" -I tests/run.py || exit 1
+# a test that writes into the real index empties the commit (66e6bd4, commit -a)
+[ "$(git hash-object "$i")" = "$h" ] || { echo "pre-commit: i test hanno cambiato l'indice"; exit 1; }

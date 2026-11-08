@@ -1,0 +1,22 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "just-develop",
+  "colors": {
+    "primary": "#10a37f",
+    "light": "#10a37f",
+    "dark": "#10a37f"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Il setup",
+        "pages": ["index"]
+      },
+      {
+        "group": "Riferimento",
+        "pages": ["agents/domain", "agents/issue-tracker", "agents/triage-labels"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+---
+title: "Mappa del setup"
+description: "Come un'idea diventa un commit, cosa bloccano gli hook e come il setup arriva su Claude Code e Antigravity."
+---
+
+Questa pagina spiega il flusso. Le regole esatte sono in `flow.md`, le decisioni e le loro fonti in `DECISIONS.md`.
+
+## Da un'idea a un commit
+
+```mermaid
+flowchart TD
+    A["Idea in italiano"] --> B["Claude: grilling e aim-higher"]
+    B --> C["Claude: spec e ticket in .scratch"]
+    C --> D["Tabella dei ticket e diagramma delle dipendenze"]
+    D --> E["Gemini: Implementa il ticket N"]
+    E --> F{"Build e test verdi?"}
+    F -- "No" --> E
+    F -- "Sì" --> G{"Tipo di review"}
+    G -- "double" --> H["3 subagenti: Standards, Spec, ponytail-review"]
+    G -- "quick" --> I["Solo build, test e docs"]
+    H --> J["Gemini corregge da solo"]
+    J --> K["Walkthrough con diagramma e fonti"]
+    I --> K
+    K --> L{"Serve una prova manuale?"}
+    L -- "Sì" --> M["La fai tu"]
+    L -- "No" --> N["Commit dopo il tuo ok"]
+    M --> N
+```
+
+## Chi fa cosa
+
+| Attività | Chi | Perché |
+|---|---|---|
+| Decidere, scrivere spec e ticket | Claude (Opus) | Un errore qui si scopre tardi |
+| Implementare un ticket | Gemini Flash o Argon, secondo la riga `Esecutore:` | Flash dove test e build mostrano l'errore, Argon dove passa inosservato |
+| Doppia Review e correzioni | Gemini, con 3 subagenti | Chi rivede parte da un contesto pulito |
+| Prova manuale, commit e merge | Tu | Le decisioni sul prodotto e il remoto restano tue |
+
+## Cosa bloccano gli hook
+
+```mermaid
+flowchart TD
+    A["L'agente vuole eseguire un comando"] --> B["Hook PreToolUse"]
+    B --> C["Toglie VAR=valore, env, sudo; apre sh -c"]
+    C --> D{"È un comando git?"}
+    D -- "No" --> E["Passa"]
+    D -- "Sì" --> F{"È distruttivo o verso il remoto?"}
+    F -- "No" --> E
+    F -- "Sì" --> G["Bloccato: lo esegui tu"]
+    A --> H["Lettura di un file"]
+    H --> I{"È .env o un file di configurazione con segreti?"}
+    I -- "Sì" --> J["Bloccata"]
+    I -- "No" --> K["Passa"]
+```
+
+Claude Code usa `hooks/claude/block-dangerous-git.py`. Antigravity usa i due script in `hooks/antigravity/`. `tests/run.py` prova gli stessi casi su entrambi.
+
+## Come arriva il setup agli agenti
+
+```mermaid
+flowchart TD
+    A["SETUP.md"] --> B{"Cosa chiedi?"}
+    B -- "Installa" --> C["Skill, plugin, regole e guardrail"]
+    B -- "Aggiorna" --> D["Mostra i cambiamenti, poi applica ciò che scegli"]
+    B -- "Cerca MCP" --> E["Profilo, ricerca, al massimo 5 proposte"]
+    C --> F["scripts/sync-from-claude.py"]
+    D --> F
+    F --> G["~/.gemini/config/rules"]
+    F --> H["~/.gemini/config/agents e skills.json"]
+    F --> I["--check: segnala le differenze e non cancella nulla"]
+```
+
+## I file
+
+| File | A cosa serve |
+|---|---|
+| `SETUP.md` | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
+| `flow.md`, `flow-prompts.md` | Il flusso di lavoro, la review e il Walkthrough |
+| `GUIDE.md`, `GLOSSARY.md` | Manuale rapido e significato dei termini |
+| `DECISIONS.md` | Ogni scelta con pro, contro e fonti |
+| `shared/global.md`, `personal/global.md` | Regole globali |
+| `hooks/` | Blocchi su git distruttivo e sulla lettura dei segreti, e controllo pre-commit |
+| `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |
+| `tests/run.py` | Prova hook e sincronizzazione |
+| `mcp.json` | Fonte unica dei server MCP |
+| `docs/agents/` | Ticket, etichette e dominio per gli agenti |
