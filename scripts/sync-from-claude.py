@@ -34,7 +34,7 @@ if not check:
     os.makedirs(join(GEMINI, 'agents'), exist_ok=True)
 src = {f for f in os.listdir(join(CLAUDE, 'agents')) if f.endswith('.md')} if os.path.isdir(join(CLAUDE, 'agents')) else set()
 for f in os.listdir(join(GEMINI, 'agents')) if os.path.isdir(join(GEMINI, 'agents')) else []:
-    if f not in src:
+    if f.endswith('.md') and f not in src:
         diff.append(f'not in Claude: {join(GEMINI, "agents", f)}')
 
 
@@ -78,7 +78,7 @@ is_link = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda _
 AGENT_SKILLS = join(HOME, '.agents', 'skills')
 key = lambda p: os.path.normcase(os.path.realpath(p))
 GEMINI_SKILLS = join(GEMINI, 'skills')
-native = set(os.listdir(GEMINI_SKILLS)) if os.path.isdir(GEMINI_SKILLS) else set()
+native = {n for n in os.listdir(GEMINI_SKILLS) if os.path.isdir(join(GEMINI_SKILLS, n))} if os.path.isdir(GEMINI_SKILLS) else set()
 groups = {}
 for t in sel:
     if os.path.basename(t) not in native:
@@ -118,9 +118,11 @@ for c_name, c_path in clients:
             diff.append(f'MCP {c_name}: missing {name}')
         elif norm_mcp(c_servers[name]) != norm_mcp(srv):
             diff.append(f'MCP {c_name}: {name} differs from mcp.json')
+
+    # Each machine keeps its own servers: a notice, never a difference.
     for name in sorted(c_servers):
         if name not in mcp_ref:
-            diff.append(f'MCP {c_name}: extra {name}')
+            print(f'note: MCP {c_name}: extra {name}, only on this machine')
 
 # 5) Guardrails: client configs are personal and never written here, only checked.
 # The extension is split so a search for that file type does not match this source.

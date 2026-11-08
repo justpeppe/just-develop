@@ -75,7 +75,7 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
    - `secrets-guardrails`: matcher `run_command|read_file|view_file|grep_search|list_dir|find_by_name|call_mcp_tool|mcp_.*|read_resource`, comando `node REPO/hooks/antigravity/block-secrets-read.js`.
 
    In `~/.gemini/config/config.json` imposta `userSettings.permissionPreset = "AGENT_PERMISSION_PRESET_DEFAULT"`, `userSettings.enableTerminalSandbox = true` e `userSettings.autoExecutionPolicy = "CASCADE_COMMANDS_AUTO_EXECUTION_PROCEED_IN_SANDBOX"`.
-9. **Sincronizza Antigravity** con `PY -I REPO/scripts/sync-from-claude.py`. Scrive regole, agenti e `skills.json`. Se `--check` segnala server MCP `extra`, l'utente ne ha già uno fuori da `REPO/mcp.json`: chiedi se aggiungerlo o toglierlo. *Fatto quando* la sincronizzazione esce 0.
+9. **Sincronizza Antigravity** con `PY -I REPO/scripts/sync-from-claude.py`. Scrive regole, agenti e `skills.json`. Un server MCP `extra` in `--check` è un avviso: esiste solo su questa macchina e resta nella configurazione del client, fuori da `REPO/mcp.json`. *Fatto quando* la sincronizzazione esce 0.
 10. **Verifica.**
     - `PY -I REPO/tests/run.py` stampa `ok`.
     - `PY -I REPO/scripts/sync-from-claude.py --check` esce 0.

@@ -209,6 +209,14 @@ with tempfile.TemporaryDirectory() as h:
     os.rmdir(os.path.join(h, '.gemini', 'config', 'skills', 'old')); os.remove(os.path.join(h, '.agents', 'skills', 'g', 'SKILL.md'))
     if sync('--check') != 0: fails.append('sync --check: must pass when aligned')
 
+    # Finder and Explorer drop their own files in any folder they open, and those are neither skills nor agents.
+    for folder in ('skills', 'agents'):
+        for name in ('.DS_Store', 'Thumbs.db'):
+            stray = os.path.join(h, '.gemini', 'config', folder, name)
+            open(stray, 'w').close()
+            if sync('--check') != 0: fails.append(f'sync --check: must ignore {name} in Antigravity {folder}')
+            os.remove(stray)
+
     # The skills CLI links here, so skills.json must leave it out.
     skill('.gemini', 'config', 'skills', 'a')
     sync()
@@ -222,6 +230,11 @@ with tempfile.TemporaryDirectory() as h:
     if sync('--check') != 1: fails.append('sync --check: must flag a different stdio server')
     json.dump({'mcpServers': {**c_base['mcpServers'], 'remote': {'type': 'http', 'url': 'https://other.test/mcp'}}}, open(cj, 'w'))
     if sync('--check') != 1: fails.append('sync --check: must flag a different remote server')
+    json.dump(c_base, open(cj, 'w'))
+
+    # Each machine keeps its own servers, so one missing from mcp.json is only a notice.
+    json.dump({'mcpServers': {**c_base['mcpServers'], 'mine': local}}, open(cj, 'w'))
+    if sync('--check') != 0: fails.append('sync --check: must accept an MCP server present only on this machine')
     json.dump(c_base, open(cj, 'w'))
 
     json.dump({**h_base, 'secrets-guardrails': {**h_base['secrets-guardrails'], 'enabled': False}}, open(hj, 'w'))
