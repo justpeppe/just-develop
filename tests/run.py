@@ -149,6 +149,11 @@ with tempfile.TemporaryDirectory() as h:
         link(os.path.join(h, t), os.path.join(h, '.claude', 'skills', n))
     open(os.path.join(h, '.claude', 'CLAUDE.md'), 'w').write('x\n')
     open(os.path.join(mk('.claude', 'agents'), 'r.md'), 'w').write('---\nname: r\ntools: Read\nmodel: sonnet\n---\nbody\n')
+
+    # A repo's agents/ folder linked into ~/.claude/agents, with fields Antigravity does not know.
+    open(os.path.join(mk('repo-agents'), 'k.md'), 'w').write('---\nname: k\ndisallowedTools: Write\neffort: high\n---\nbody\n')
+    link(os.path.join(h, 'repo-agents'), os.path.join(h, '.claude', 'agents', 'linked'))
+    open(os.path.join(h, 'repo-agents', 'only-claude.md'), 'w').write('---\nname: only-claude\nantigravity:  "false" \n---\nbody\n')
     fx = mk('repo')
     mk('repo', 'scripts'); mk('repo', 'shared'); mk('repo', 'personal')
     shutil.copy(os.path.join(R, 'scripts', 'sync-from-claude.py'), os.path.join(fx, 'scripts'))
@@ -166,14 +171,21 @@ with tempfile.TemporaryDirectory() as h:
     }
     json.dump(s_base, open(sj_path, 'w'))
     mk('.gemini', 'config', 'skills', 'old')
-    sync = lambda *a: subprocess.run([sys.executable, '-I', os.path.join(fx, 'scripts', 'sync-from-claude.py'), *a],
-                                     env={**os.environ, 'HOME': h, 'USERPROFILE': h}, capture_output=True, text=True).returncode
+    run = lambda *a: subprocess.run([sys.executable, '-I', os.path.join(fx, 'scripts', 'sync-from-claude.py'), *a],
+                                    env={**os.environ, 'HOME': h, 'USERPROFILE': h}, capture_output=True, text=True)
+    sync = lambda *a: run(*a).returncode
     sj = os.path.join(h, '.gemini', 'config', 'skills.json')
     if sync('--check') != 1 or os.listdir(os.path.join(h, '.gemini', 'config')) != ['skills']:
         fails.append('sync --check: must fail and write nothing')
     if sync() != 0: fails.append('sync: exit != 0')
     if '  - read_file\n' not in open(os.path.join(h, '.gemini', 'config', 'agents', 'r.md')).read():
         fails.append('sync: agent missing read_file tool')
+    k = os.path.join(h, '.gemini', 'config', 'agents', 'k.md')
+    if not os.path.isfile(k): fails.append('sync: agent in a linked folder not copied')
+    else:
+        copied = open(k).read()
+        if 'disallowedTools:' in copied or 'effort:' in copied: fails.append('sync: Claude-only agent fields copied')
+    if os.path.exists(os.path.join(h, '.gemini', 'config', 'agents', 'only-claude.md')): fails.append('sync: copied an agent marked antigravity: false')
     for rule in ('claude-md.md', 'flow.md', 'shared.md', 'personal.md'):
         if not os.path.isfile(os.path.join(h, '.gemini', 'config', 'rules', rule)): fails.append(f'sync: rule {rule} missing')
     want = {'entries': [{'path': f'{h}/.agents/skills'.replace('\\', '/'), 'include_only': ['a']},
@@ -214,6 +226,24 @@ with tempfile.TemporaryDirectory() as h:
     link(moved, broken); os.rmdir(moved)
     if sync('--check') != 1: fails.append('sync --check: must flag a broken skill link')
     unlink(broken)
+
+    # In the linked agents folder, a broken link is reported instead of crashing, and two agents with one name are flagged.
+    gone_target, gone = mk('gone-target'), os.path.join(h, 'repo-agents', 'gone.md')
+    link(gone_target, gone); os.rmdir(gone_target)
+    out = run('--check')
+    if out.returncode != 1 or 'broken link:' not in out.stdout: fails.append('sync --check: must report a broken agent link without crashing')
+    unlink(gone)
+    twin = os.path.join(h, 'repo-agents', 'r.md')
+    open(twin, 'w').write('---\nname: r2\n---\nbody\n')
+    if 'two agents named r.md' not in run('--check').stdout: fails.append('sync --check: must flag two agents with the same file name')
+    os.remove(twin)
+
+    # A copy left in Antigravity from before an agent was marked antigravity: false is flagged.
+    stale = os.path.join(h, '.gemini', 'config', 'agents', 'only-claude.md')
+    open(stale, 'w').write('old copy\n')
+    if 'marked antigravity: false, still in Antigravity' not in run('--check').stdout: fails.append('sync --check: must flag a stale copy of an agent marked antigravity: false')
+    os.remove(stale)
+    if sync('--check') != 0: fails.append('sync --check: must pass again once the agents are fixed')
 
     # Finder and Explorer drop their own files in any folder they open, and those are neither skills nor agents.
     for folder in ('skills', 'agents'):

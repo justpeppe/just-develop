@@ -293,3 +293,19 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | Chi installa il setup le riceve | Su Windows i link sono junction: il comportamento lì è `non verificato` |
 
 **Fonti:** scelta dell'utente, 10/11/2026; [Anthropic, Skills](https://code.claude.com/docs/en/skills), tabella delle posizioni e frase sui link simbolici; [Google, Skills](https://antigravity.google/docs/skills) e [Google, Customization discovery](https://antigravity.google/docs/customization-discovery) per `~/.gemini/config/skills` e `skills.json`; tutte lette il 10/11/2026. Che `~/.gemini/config/skills` sia un link è stato visto con `ls -ld` su questo Mac. Un link rotto lo segnala `sync-from-claude.py --check`, provato in `tests/run.py`. Nessuna misura.
+
+## 29. Un contrarian smonta i ticket prima del codice
+
+**Scelta:** alla fine di `/to-tickets`, prima della tabella di consegna, Opus lancia l'agente `contrarian` (`agents/contrarian.md`): un subagente a contesto pulito che fa il premortem dei ticket, cioè immagina che siano già falliti e cerca perché. Ha tutti gli strumenti: cerca nel codice, sul web, nella documentazione e nei server MCP, e può scrivere ed eseguire script di verifica nella sua cartella `.scratch/<lavoro>/contrarian/`. Ogni obiezione cita una prova riapribile. Opus confronta `git status --short` e le impronte dei file di spec e ticket prima e dopo, per vedere che siano intatti, ricontrolla le prove, scarta quelle smentite e segna `non verificato` quelle che non riesce a controllare; l'utente sceglie cosa cambiare. Modello, livello e quando si salta li dice il file dell'agente. Sulla macchina `~/.claude/agents/just-develop` è un link a `REPO/agents`. L'agente esiste solo in Claude Code: il campo `antigravity: false` dice a `sync-from-claude.py` di non copiarlo, perché `gemini_agent()` darebbe alla copia solo strumenti di lettura e `search_web`, e `/to-tickets` si fa comunque con Opus in Claude Code.
+
+**Perché:** prima esisteva solo come riga nella guida ai modelli di `flow.md`, senza un momento né un formato. Chi ha scritto spec e ticket non vede i propri buchi. Che un errore trovato nei ticket costi meno di uno trovato in implementazione è `non verificato` per questo flusso. Limitare gli strumenti gli avrebbe tolto i server MCP e la possibilità di provare un'affermazione con un calcolo: la scelta dell'utente è dargli tutto e controllare dopo, invece di impedire prima.
+
+| Pro | Contro |
+|---|---|
+| Un revisore che non ha visto il ragionamento non ne è influenzato | Chi riceve il compito di trovare problemi ne trova sempre: senza la regola della prova diventa rumore |
+| Cerca ovunque e prova le affermazioni con script propri | Che scriva solo nella sua cartella è un'istruzione, non un blocco: lo controlla Opus dopo, confrontando le impronte dei file |
+| Ogni obiezione è controllabile | Stesso modello: occhi nuovi, non una risposta più intelligente |
+| | Non esiste in Antigravity |
+| | Un subagente in più per ogni lavoro: costo non misurato |
+
+**Fonti:** scelta dell'utente, 10/11/2026; [Anthropic, Best practices](https://code.claude.com/docs/en/best-practices), sezioni "By someone who didn't write the code" e "Know what subagents cost", letta il 10/11/2026; [Anthropic, Subagents](https://code.claude.com/docs/en/sub-agents), per i campi `model` ed `effort`, per i campi sconosciuti ignorati e per la lettura ricorsiva di `~/.claude/agents`, letta il 10/11/2026: la pagina non dice se segue una cartella collegata, quindi è `non verificato`; il premortem di Gary Klein, *Performing a Project Premortem* (Harvard Business Review, 2007), visto solo tramite fonti secondarie il 10/11/2026: lo studio citato misura più ragioni trovate, non ragioni più giuste. Nessuna misura su questo flusso.

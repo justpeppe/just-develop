@@ -1,5 +1,5 @@
 """Mirror the Claude Code setup into Antigravity; --check writes nothing, prints each difference and exits 1 if any."""
-import json, os, shutil, sys
+import json, os, re, shutil, sys
 from os.path import join
 
 HOME = os.path.expanduser('~')
@@ -32,7 +32,21 @@ for source, name in (('flow.md', 'flow.md'), ('shared/global.md', 'shared.md'), 
 # 2) Agents and knowledge: copies only, and anything present only in Antigravity is reported, never deleted.
 if not check:
     os.makedirs(join(GEMINI, 'agents'), exist_ok=True)
-src = {f for f in os.listdir(join(CLAUDE, 'agents')) if f.endswith('.md')} if os.path.isdir(join(CLAUDE, 'agents')) else set()
+is_link = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda _: False)(p)
+
+# Claude Code scans agents/ recursively (Anthropic, Subagents page); that it follows a linked folder is unverified.
+src = {}
+for d, _, files in os.walk(join(CLAUDE, 'agents'), followlinks=True):
+    for f in sorted(files):
+        p = join(d, f)
+
+        # A broken link shows up as a file here: report it instead of crashing on open().
+        if is_link(p) and not os.path.exists(p):
+            diff.append(f'broken link: {p}')
+        elif f.endswith('.md') and f in src:
+            diff.append(f'two agents named {f}: {src[f]} and {p}')
+        elif f.endswith('.md'):
+            src[f] = p
 for f in os.listdir(join(GEMINI, 'agents')) if os.path.isdir(join(GEMINI, 'agents')) else []:
     if f.endswith('.md') and f not in src:
         diff.append(f'not in Claude: {join(GEMINI, "agents", f)}')
@@ -44,7 +58,7 @@ def gemini_agent(text):
 
     # The frontmatter is the text before the second ---.
     head, sep, body = text.partition(nl + '---' + nl)
-    keep = [line for line in head.split(nl) if not line.startswith(('tools:', 'model:'))]
+    keep = [line for line in head.split(nl) if not line.startswith(('tools:', 'disallowedTools:', 'model:', 'effort:'))]
     extra = [
         'tools:',
         '  - read_file',
@@ -62,8 +76,15 @@ def gemini_agent(text):
     return nl.join(keep + extra) + sep + body
 
 
-for f in src:
-    put(join(GEMINI, 'agents', f), gemini_agent(open(join(CLAUDE, 'agents', f), encoding='utf-8').read()))
+for f, path in src.items():
+    text = open(path, encoding='utf-8').read()
+
+    # An agent marked antigravity: false needs tools the Antigravity copy would not get; spaces and quotes around false are ignored.
+    head = text.partition(chr(10) + '---' + chr(10))[0].split(chr(10))
+    if 'antigravity:false' not in [re.sub('[ "\']', '', line) for line in head]:
+        put(join(GEMINI, 'agents', f), gemini_agent(text))
+    elif os.path.exists(join(GEMINI, 'agents', f)):
+        diff.append(f'marked antigravity: false, still in Antigravity: {join(GEMINI, "agents", f)}')
 
 # ponytail: --check skips knowledge/ (a tree copy); compare it too if it ever drifts
 if not check and os.path.isdir(join(CLAUDE, 'knowledge')):
@@ -74,7 +95,6 @@ claude_settings = json.load(open(join(CLAUDE, 'settings.json'), encoding='utf-8'
 off = {k for k, v in (claude_settings.get('skillOverrides') or {}).items() if v == 'off'}
 sel = [os.path.realpath(join(CLAUDE, 'skills', n)) for n in os.listdir(join(CLAUDE, 'skills'))
        if n not in off and os.path.isfile(join(CLAUDE, 'skills', n, 'SKILL.md'))]
-is_link = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda _: False)(p)
 AGENT_SKILLS = join(HOME, '.agents', 'skills')
 key = lambda p: os.path.normcase(os.path.realpath(p))
 GEMINI_SKILLS = join(GEMINI, 'skills')

@@ -29,7 +29,7 @@ Davanti a una richiesta nuova senza ticket né spec, Opus sceglie la via sui fat
 
 **Fasi del ciclo (Passaggio tramite disco, 1 ticket = 1 sola finestra dall'inizio al commit, ZERO copia-incolla).**
 I due strumenti condividono il disco (`.scratch/` per spec e ticket, `git diff` per il codice). Non si salta mai avanti e indietro tra le due estensioni a metà di un ticket. **Un branch per spec:** tutti i suoi ticket vivono lì, un ticket Gemini alla volta; il merge su `main` lo fai tu a spec finita. Mentre Gemini lavora puoi progettare la spec successiva con Claude, che intanto scrive solo in `.scratch/` e resta sul branch corrente:
-1. **Progettazione (con Opus):** `/grill-with-docs` → `/to-spec` → `/to-tickets` (ticket piccoli: un solo meccanismo per ticket in `.scratch/<lavoro>/issues/`). Nel corpo del ticket Opus scrive il comportamento atteso, come si attiva la funzione e se oggi è raggiungibile, le ipotesi in una sezione `Ipotesi` a parte e una **verifica eseguibile** con esito passa/non passa. Il ticket descrive il comportamento e lascia all'esecutore il compito di trovare i punti da toccare cercando nel codice: percorsi, numeri di riga e frammenti invecchiano in fretta (eccezione, come in `/to-tickets`: un frammento uscito da un prototipo che fissa una decisione). In ogni ticket Opus indica in testa:
+1. **Progettazione (con Opus):** `/grill-with-docs` → `/to-spec` → `/to-tickets` (ticket piccoli: un solo meccanismo per ticket in `.scratch/<lavoro>/issues/`). Nel corpo del ticket Opus scrive il comportamento atteso, come si attiva la funzione e se oggi è raggiungibile, le ipotesi in una sezione `Ipotesi` a parte e una **verifica eseguibile** con esito passa/non passa. Il ticket descrive il comportamento e lascia all'esecutore il compito di trovare i punti da toccare cercando nel codice: percorsi, numeri di riga e frammenti invecchiano in fretta (eccezione, come in `/to-tickets`: un frammento uscito da un prototipo che fissa una decisione). Finiti i ticket, prima della tabella di consegna, Opus lancia l'agente `contrarian`, che fa il premortem dei ticket con prove esplicite: quando si salta lo dice la sua descrizione, come si filtrano le obiezioni `flow-prompts.md`, sezione 5. In ogni ticket Opus indica in testa:
    - **`Review: double`** (default per ticket normali, architetturali, thread o UI) oppure **`Review: quick`** (per ticket piccoli $\le 30$ righe, costanti, rinomine o ritocchi meccanici senza nuovi moduli, thread o schermate);
    - **`Esecutore:`** modello e livello di thinking per Antigravity (per esempio `Gemini 3.8 Flash · Medium`), scelti con la regola degli esecutori qui sopra;
    - se la verifica finale è **HITL (Prova manuale)** oltre a build e test;
@@ -40,7 +40,8 @@ I due strumenti condividono il disco (`.scratch/` per spec e ticket, `git diff` 
      | Attività | Dove | Modello · livello |
      |---|---|---|
      | Ingresso, grilling, spec, ticket, wayfinder | Claude Code | Opus `medium`; `high` per scelte difficili da annullare e bug difficili |
-     | Ricerca su doc e web, contrarian | subagente Claude | Sonnet `high` |
+     | Ricerca su doc e web | subagente Claude | Sonnet `high` |
+     | Premortem dei ticket | agente `contrarian` | quelli scritti in `agents/contrarian.md` |
      | Cercare file o simboli nel codice | subagente Claude | Haiku (o una `Grep` diretta) |
      | Implementare un ticket | Antigravity | riga `Esecutore:` (regola degli esecutori in cima) |
      | Fix dopo la review, Answer, Walkthrough | stessa chat Antigravity | stesso modello e livello del ticket |

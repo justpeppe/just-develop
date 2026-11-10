@@ -11,7 +11,8 @@ Questa pagina spiega il flusso. Le regole esatte sono in `flow.md`, le decisioni
 flowchart TD
     A["Idea in italiano"] --> B["Claude: grilling e aim-higher"]
     B --> C["Claude: spec e ticket in .scratch"]
-    C --> D["Tabella dei ticket e diagramma delle dipendenze"]
+    C --> C2["Contrarian: premortem dei ticket, scegli tu le obiezioni"]
+    C2 --> D["Tabella dei ticket e diagramma delle dipendenze"]
     D --> E["Gemini: Implementa il ticket N"]
     E --> F{"Build e test verdi?"}
     F -- "No" --> E
@@ -32,6 +33,7 @@ flowchart TD
 | Attività | Chi | Perché |
 |---|---|---|
 | Decidere, scrivere spec e ticket | Claude (Opus) | Un errore qui si scopre tardi |
+| Smontare i ticket prima del codice | Agente `contrarian` in Claude Code | Non ha visto il ragionamento che li ha prodotti |
 | Implementare un ticket | Gemini Flash o Argon, secondo la riga `Esecutore:` | Flash dove test e build mostrano l'errore, Argon dove passa inosservato |
 | Doppia Review e correzioni | Gemini, con 3 subagenti | Chi rivede parte da un contesto pulito |
 | Prova manuale, commit e merge | Tu | Le decisioni sul prodotto e il remoto restano tue |
@@ -76,10 +78,11 @@ flowchart TD
 |---|---|
 | `SETUP.md` | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
 | `SETUP-REPO.md` | Analisi stile retro di un repo e suo allineamento |
-| `flow.md`, `flow-prompts.md` | Il flusso di lavoro, la review e il Walkthrough |
+| `flow.md`, `flow-prompts.md` | Il flusso di lavoro, il contrarian, la review e il Walkthrough |
 | `GUIDE.md`, `GLOSSARY.md` | Manuale rapido e significato dei termini |
 | `DECISIONS.md` | Ogni scelta con pro, contro e fonti |
 | `shared/global.md`, `personal/global.md` | Regole globali |
+| `agents/` | L'agente `contrarian`, che fa il premortem dei ticket |
 | `skills/` | Skill del setup: `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
 | `hooks/` | Blocchi su git distruttivo e sulla lettura dei segreti, e controllo pre-commit |
 | `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |

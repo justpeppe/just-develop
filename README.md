@@ -21,13 +21,14 @@ Lo stesso file copre anche `Aggiorna il setup` e `Cerca MCP utili per me`.
 | [`SETUP.md`](SETUP.md) | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
 | [`SETUP-REPO.md`](SETUP-REPO.md) | Analizza come lavorano gli agenti su un repo e lo allinea |
 | [`flow.md`](flow.md) | Il flusso di lavoro, sempre attivo |
-| [`flow-prompts.md`](flow-prompts.md) | Review, documentazione, Walkthrough, retro |
+| [`flow-prompts.md`](flow-prompts.md) | Review, documentazione, Walkthrough, retro, contrarian |
 | [`GUIDE.md`](GUIDE.md) | Manuale rapido per te |
 | [`GLOSSARY.md`](GLOSSARY.md) | I termini del flusso |
 | [`DECISIONS.md`](DECISIONS.md) | Cosa è entrato nel setup, perché e da quali fonti |
 | [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) | Regole di questo repo per gli agenti |
 | [`docs/`](docs/index.mdx) | Mappa del setup con i diagrammi; `docs/agents/` descrive ticket, etichette e dominio |
 | [`shared/`](shared/global.md), [`personal/`](personal/global.md) | Regole globali |
+| `agents/` | L'agente `contrarian`, che fa il premortem dei ticket |
 | `skills/` | Skill del setup: `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
 | `hooks/` | Blocchi su git distruttivo e lettura dei segreti |
 | `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |

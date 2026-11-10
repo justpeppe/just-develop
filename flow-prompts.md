@@ -1,6 +1,6 @@
-# Riferimento operativo per Review, Documentazione (`junior-deep-docs`), Walkthrough e Retro (`flow-prompts.md`)
+# Riferimento operativo per Review, Documentazione (`junior-deep-docs`), Walkthrough, Retro e Contrarian (`flow-prompts.md`)
 
-Questo file contiene le istruzioni operative per i **3 subagenti di Doppia Review**, per la **Documentazione del Codice (`docs/` con Mintlify + `junior-deep-docs` + `humanizer`)**, per il **Walkthrough di fine ticket** e per la **`/retro`**. Non contiene template da copiare e incollare a mano tra le chat: gli strumenti leggono direttamente il ticket da `.scratch/` e le modifiche da `git diff`.
+Questo file contiene le istruzioni operative per i **3 subagenti di Doppia Review**, per la **Documentazione del Codice (`docs/` con Mintlify + `junior-deep-docs` + `humanizer`)**, per il **Walkthrough di fine ticket**, per la **`/retro`** e per il **contrarian** sui ticket. Non contiene template da copiare e incollare a mano tra le chat: gli strumenti leggono direttamente il ticket da `.scratch/` e le modifiche da `git diff`.
 
 ---
 
@@ -83,3 +83,16 @@ I passi concreti da provare a schermo. Chiudi con: `Se la prova manuale passa, d
 | Regola di stile del codice per le review di un progetto | `CODING_STANDARDS.md` di quel repo |
 | Termine di dominio o tecnico chiarito | `GLOSSARY.md` |
 | Decisione architetturale importante e costosa da invertire | `docs/adr/` |
+
+## 5. Contrarian sui ticket (fine di `/to-tickets`)
+
+Finiti i ticket e prima della tabella di consegna, Opus lancia l'agente `contrarian` (`agents/contrarian.md` di just-develop, dove stanno modello, istruzioni, regola della prova e quando si salta; esiste solo in Claude Code). Ha tutti gli strumenti, così può cercare ovunque e scrivere ed eseguire script di verifica; ciò che crea va in `.scratch/<lavoro>/contrarian/`. Gli passa il percorso della spec e dei ticket in `.scratch/<lavoro>/`, non il ragionamento che li ha prodotti. Prima di lanciarlo Opus annota `git status --short` e l'impronta dei file di spec e ticket (`shasum`, su Windows `Get-FileHash`): i ticket appena scritti spesso non sono tracciati, e `git status` da solo non ne vedrebbe le modifiche.
+
+Quando arriva il report, Opus:
+
+1. rifà `git status --short` e le impronte, e controlla che spec, ticket e codice siano come prima e che il contrarian abbia scritto solo nella sua cartella;
+2. riapre ogni prova citata e rilancia gli script di verifica;
+3. tiene le obiezioni la cui prova regge, scarta dicendolo quelle smentite, e mostra come `non verificato` quelle che non è riuscito a controllare;
+4. ti presenta la tabella e modifica solo i ticket che scegli.
+
+*Fatto quando* ogni obiezione è accolta, con il ticket cambiato, oppure scartata con il motivo.

@@ -37,7 +37,7 @@ Opus scrive la scelta per ogni ticket nella riga `Esecutore:`.
 
 ## 3. Il ciclo di un lavoro
 
-1. **Decidi con Claude.** `/grill-with-docs`, poi `/to-spec` e `/to-tickets`. I ticket finiscono in `.scratch/<lavoro>/issues/`, sul branch della spec.
+1. **Decidi con Claude.** `/grill-with-docs`, poi `/to-spec` e `/to-tickets`; alla fine l'agente `contrarian` prova a smontare i ticket e tu scegli quali obiezioni accogliere. I ticket finiscono in `.scratch/<lavoro>/issues/`, sul branch della spec.
 2. **Implementa con Gemini.** Chat pulita, modello e livello dalla riga `Esecutore:`, poi `Implementa il ticket 01`. Resti lì fino al commit.
 3. **Review automatica.** Con `Review: double` Gemini lancia 3 subagenti e corregge da solo. Con `Review: quick` bastano build, test e `docs/`.
 4. **Prova.** Gemini aggiorna `.scratch/`, ti mostra il Walkthrough e, se serve, i passi da provare.
@@ -49,7 +49,7 @@ Mentre Gemini lavora puoi progettare la spec successiva con Claude.
 
 | Quando | Chi | Cosa ricevi |
 |---|---|---|
-| Fine di `/to-tickets` | Claude | Tabella dei ticket: titolo, prompt, modello e livello, review, perché; sotto, il `flowchart TD` delle dipendenze |
+| Fine di `/to-tickets` | Claude, con l'agente `contrarian` | Le obiezioni ai ticket, ognuna con la sua prova, da accogliere o scartare; poi la tabella dei ticket: titolo, prompt, modello e livello, review, perché; sotto, il `flowchart TD` delle dipendenze |
 | Fine ticket | Gemini | Walkthrough: effetto in 2 frasi, `flowchart TD`, API e flag con la fonte, spiegazione dei passaggi, prova manuale |
 | Fine di un lavoro | Claude | `flowchart TD` del flusso toccato e tabella `Cosa, Perché, Fonte` |
 

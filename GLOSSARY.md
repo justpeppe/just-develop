@@ -54,6 +54,12 @@ Il documento (`spec.md` in `.scratch/`) che fissa cosa costruire e perché, scri
 Un pezzo di lavoro piccolo e autonomo salvato su disco in `.scratch/`, con un obiettivo chiaro e criteri di verifica.
 _Avoid_: task (`task` è solo uno dei valori del campo `Type`).
 
+**Contrarian**:
+L'agente di Claude Code che fa il premortem dei ticket: finiti i ticket e prima del codice, immagina che il lavoro sia già fallito e cerca perché, nel codice e in qualsiasi fonte. Ogni obiezione porta una prova che chiunque può riaprire; può anche scrivere ed eseguire script di verifica, nella sua cartella in `.scratch/`. Spec, ticket e codice li cambi tu.
+
+**Premortem**:
+Immaginare che un progetto sia già fallito e cercare le cause prima di cominciare. Il metodo è di Gary Klein (Harvard Business Review, 2007), letto tramite fonti secondarie il 10/11/2026: vedi `DECISIONS.md`, decisione 29.
+
 **Type**:
 Il tipo di un ticket: `research`, `prototype`, `grilling` o `task` (`HITL` se fatto insieme a Opus, `AFK` se implementato da Argon).
 
