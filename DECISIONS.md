@@ -280,3 +280,16 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | Le tre skill non citano più Delphi né un repo specifico (controllato con `grep`) | Le versioni nuove non sono ancora provate su un lavoro reale |
 
 **Fonti:** scelta dell'utente, 10/11/2026; `SKILL.md` della vecchia `aim-higher`, Altitude e regola 5, letta il 10/11/2026; [GitBook, AI coding assistants and SKILL.md](https://gitbook.com/docs/getting-started/ai-documentation/ai-coding-assistants-and-skillmd), letta il 10/11/2026; [W3C, Understanding SC 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html), letta il 10/11/2026. I limiti di Nielsen vengono da fonti secondarie viste in ricerca il 10/11/2026, [video NN/g](https://www.nngroup.com/videos/3-response-time-limits-interaction-design/) e [Nielsen, Time Scales of UX](https://jakobnielsenphd.substack.com/p/time-scale-ux): l'articolo originale non è stato letto. Nessuna misura.
+
+## 28. Le skill dell'utente vivono nel repo, gli agenti le leggono tramite link
+
+**Scelta:** `aim-higher`, `junior-deep-docs` e `ui-ux-doctrine` stanno in `skills/` di questo repo. Sulla macchina, `~/.agents/skills/<nome>` è un link alla cartella del repo; `~/.claude/skills/<nome>` è un link a `~/.agents/skills/<nome>`, e Antigravity le vede da `~/.gemini/config/skills`, che dove la CLI `skills` l'ha creato è già un link a `~/.agents/skills`. Esiste così una sola copia di ogni skill.
+
+**Perché:** prima stavano solo sulla macchina, senza storia né review, e chi installava il setup non le riceveva. Nessuno dei due agenti legge `~/.agents/skills` da solo: Claude Code carica `~/.claude/skills` e segue i link; Antigravity carica `~/.gemini/config/skills`, oppure le cartelle indicate in `~/.gemini/config/skills.json`.
+
+| Pro | Contro |
+|---|---|
+| Diff, review e commit anche per le skill | Se la cartella del repo si sposta o sparisce, i link si rompono e le skill spariscono da entrambi gli agenti |
+| Chi installa il setup le riceve | Su Windows i link sono junction: il comportamento lì è `non verificato` |
+
+**Fonti:** scelta dell'utente, 10/11/2026; [Anthropic, Skills](https://code.claude.com/docs/en/skills), tabella delle posizioni e frase sui link simbolici; [Google, Skills](https://antigravity.google/docs/skills) e [Google, Customization discovery](https://antigravity.google/docs/customization-discovery) per `~/.gemini/config/skills` e `skills.json`; tutte lette il 10/11/2026. Che `~/.gemini/config/skills` sia un link è stato visto con `ls -ld` su questo Mac. Un link rotto lo segnala `sync-from-claude.py --check`, provato in `tests/run.py`. Nessuna misura.

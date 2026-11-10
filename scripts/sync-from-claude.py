@@ -95,6 +95,11 @@ mine = {os.path.basename(t) for t in sel if key(os.path.dirname(t)) == key(AGENT
 diff += [f'active in Antigravity, not in Claude: {join(AGENT_SKILLS, n)}' for n in sorted(os.listdir(AGENT_SKILLS) if os.path.isdir(AGENT_SKILLS) else [])
          if n not in mine and not is_link(join(AGENT_SKILLS, n)) and os.path.isfile(join(AGENT_SKILLS, n, 'SKILL.md'))]
 
+# A link left behind by a moved repo hides its skill from both agents without any error.
+for folder in (join(CLAUDE, 'skills'), AGENT_SKILLS):
+    diff += [f'broken link: {join(folder, n)}' for n in sorted(os.listdir(folder) if os.path.isdir(folder) else [])
+             if is_link(join(folder, n)) and not os.path.exists(join(folder, n))]
+
 # 4) MCP: mcp.json is the single source and client configs are never written here.
 mcp_file = join(REPO, 'mcp.json')
 mcp_ref = (json.load(open(mcp_file, encoding='utf-8')).get('mcpServers') or {}) if os.path.isfile(mcp_file) else {}

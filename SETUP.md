@@ -35,9 +35,9 @@ Unica tabella di ciò che il setup installa e aggiorna.
 | `DietrichGebert/ponytail` | plugin | clone in `~/.gemini/config/plugins/` |
 | Server in `REPO/mcp.json` | MCP utente | `~/.gemini/config/mcp_config.json` |
 
-Ponytail resta plugin perché il suo hook lo tiene sempre attivo. Le altre fonti sono solo skill: la CLI tiene una copia in `~/.agents/skills` e la collega a entrambi gli agenti.
+Ponytail resta plugin perché il suo hook lo tiene sempre attivo. Le altre fonti sono solo skill: la CLI tiene una copia in `~/.agents/skills` e la collega a entrambi gli agenti. Le skill di `REPO/skills/` fanno eccezione: in `~/.agents/skills` sono link al repo.
 
-Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrine`, `aim-higher`. Se ne manca una, elencala nel report finale e continua. Se una di queste esiste in `~/.agents/skills/<nome>` ma non in `~/.claude/skills/<nome>`, collegala lì con un link simbolico (su Windows una junction), altrimenti Claude Code non la vede.
+Skill di questo repo: ogni cartella di `REPO/skills/` (`aim-higher`, `junior-deep-docs`, `ui-ux-doctrine`). La copia versionata è quella in `REPO`: si modifica lì, e gli agenti la leggono tramite link.
 
 ## Installa
 
@@ -57,8 +57,9 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
    - Installa con `npx -y skills@latest add <fonte> -g -y -a claude-code -a antigravity -s <nomi>`.
    - Controlla la collisione: se il nome `code-review` non apre la skill di Matt su Claude Code, segnalalo.
    - Disinstalla i plugin che duplicano queste skill, come `mattpocock-skills@mattpocock`, `humanizer@humanizer` e `skill-creator@claude-plugins-official`, dopo il sì dell'utente.
+   - Collega le skill di `REPO/skills/`: per ogni cartella crea `~/.agents/skills/<nome>` come link simbolico verso `REPO/skills/<nome>` (su Windows una junction, che vuole un percorso assoluto), poi `~/.claude/skills/<nome>` come link verso `~/.agents/skills/<nome>`, e lo stesso in `~/.gemini/config/skills/<nome>` se quella cartella non è già un link a `~/.agents/skills`. Claude Code legge solo `~/.claude/skills` e segue i link; Antigravity legge `~/.gemini/config/skills` (pagine Skills di Anthropic e Google, lette il 10/11/2026). Se al posto del link c'è già una cartella vera, chiedi all'utente prima di sostituirla.
 
-   *Fatto quando* ogni skill ha il suo `SKILL.md` in `~/.claude/skills/<nome>` e in `~/.gemini/config/skills/<nome>` e nessun plugin la duplica.
+   *Fatto quando* ogni skill ha il suo `SKILL.md` in `~/.claude/skills/<nome>` e in `~/.gemini/config/skills/<nome>`, ogni skill di `REPO/skills/` porta lì attraverso i link, e nessun plugin la duplica. Se in seguito sposti `REPO`, ripeti questo punto: `sync-from-claude.py --check` segnala i link rotti.
 5. **Installa i plugin.**
    - Claude Code: `claude plugin marketplace add <owner/repo>`, poi `claude plugin install ponytail@ponytail`. Imposta `extraKnownMarketplaces.<nome>.autoUpdate = true` in `~/.claude/settings.json`.
    - Antigravity: `git clone --depth 1 https://github.com/<owner/repo> ~/.gemini/config/plugins/<nome>` e `.plugins.<nome>.enabled = true` in `~/.gemini/config/config.json`. In `~/.gemini/GEMINI.md` aggiungi `@[ponytail](<plugins>/ponytail/AGENTS.md)`.
@@ -94,7 +95,7 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
    - MCP: per ogni server di `REPO/mcp.json` cerca l'ultima versione sulla sua fonte ufficiale. Un server con `url` si aggiorna da solo; uno lanciato con `npx` o `uvx` dipende dalla versione indicata; un binario va scaricato dalla release.
 
    Mostra per ogni fonte la versione attuale, la nuova e i cambi di comportamento letti dal changelog. *Fatto quando* l'utente ha scelto cosa aggiornare.
-2. **Salva il punto di ritorno:** copia `~/.agents/skills` e `~/.agents/.skill-lock.json` in `~/.agents/skills-backup`, sostituendo la copia precedente.
+2. **Salva il punto di ritorno:** copia `~/.agents/skills` e `~/.agents/.skill-lock.json` in `~/.agents/skills-backup`, sostituendo la copia precedente. Salta i link a `REPO/skills/`: le loro versioni sono nella storia git, e una copia rimessa al posto del link smetterebbe di seguire il repo.
 3. **Applica** ciò che l'utente ha scelto: `npx -y skills@latest update -g -y`, `claude plugin update <plugin>@<marketplace>`, `git -C <clone> pull --ff-only`. Per un server MCP: cambia la versione in `REPO/mcp.json` e nei client, o riscarica il binario dalla release, poi prova un tool. Per un `skills-lock.json` nel progetto corrente chiedi prima, poi `npx -y skills@latest update -p -y`. Dopo l'update controlla se la CLI ha creato cartelle per agenti che l'utente non usa e segnalale.
 4. **Riallinea e verifica** con il passo 9 e il passo 10 di Installa.
 5. **Riporta** cosa è cambiato, cosa è rimasto indietro e come tornare alla copia in `~/.agents/skills-backup`.

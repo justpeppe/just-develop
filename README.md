@@ -28,6 +28,7 @@ Lo stesso file copre anche `Aggiorna il setup` e `Cerca MCP utili per me`.
 | [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) | Regole di questo repo per gli agenti |
 | [`docs/`](docs/index.mdx) | Mappa del setup con i diagrammi; `docs/agents/` descrive ticket, etichette e dominio |
 | [`shared/`](shared/global.md), [`personal/`](personal/global.md) | Regole globali |
+| `skills/` | Skill del setup: `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
 | `hooks/` | Blocchi su git distruttivo e lettura dei segreti |
 | `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |
 | `tests/run.py` | Controllo di hook e sincronizzazione |

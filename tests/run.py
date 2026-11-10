@@ -209,6 +209,12 @@ with tempfile.TemporaryDirectory() as h:
     os.rmdir(os.path.join(h, '.gemini', 'config', 'skills', 'old')); os.remove(os.path.join(h, '.agents', 'skills', 'g', 'SKILL.md'))
     if sync('--check') != 0: fails.append('sync --check: must pass when aligned')
 
+    # A skill linked from a repo that has since moved must show up as a difference.
+    moved, broken = mk('moved'), os.path.join(h, '.agents', 'skills', 'moved')
+    link(moved, broken); os.rmdir(moved)
+    if sync('--check') != 1: fails.append('sync --check: must flag a broken skill link')
+    unlink(broken)
+
     # Finder and Explorer drop their own files in any folder they open, and those are neither skills nor agents.
     for folder in ('skills', 'agents'):
         for name in ('.DS_Store', 'Thumbs.db'):
