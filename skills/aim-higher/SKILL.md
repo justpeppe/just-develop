@@ -15,7 +15,7 @@ Collect facts from three sources before proposing anything:
 2. **Official documentation** of the language, framework or library, in the version the project uses.
 3. **The web:** standards, protocols, established libraries and engineering practice for this class of problem.
 
-Cite code by file and function, and pages by publisher, title and date read.
+Cite code by file and symbol, and pages by publisher, title and date read.
 
 *Done when* every claim used in steps 2 and 3 has a source or is marked `non verificato`.
 

@@ -309,3 +309,16 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | | Un subagente in più per ogni lavoro: costo non misurato |
 
 **Fonti:** scelta dell'utente, 10/11/2026; [Anthropic, Best practices](https://code.claude.com/docs/en/best-practices), sezioni "By someone who didn't write the code" e "Know what subagents cost", letta il 10/11/2026; [Anthropic, Subagents](https://code.claude.com/docs/en/sub-agents), per i campi `model` ed `effort`, per i campi sconosciuti ignorati e per la lettura ricorsiva di `~/.claude/agents`, letta il 10/11/2026: la pagina non dice se segue una cartella collegata, quindi è `non verificato`; il premortem di Gary Klein, *Performing a Project Premortem* (Harvard Business Review, 2007), visto solo tramite fonti secondarie il 10/11/2026: lo studio citato misura più ragioni trovate, non ragioni più giuste. Nessuna misura su questo flusso.
+
+## 30. Il codice si cita per file e simbolo
+
+**Scelta:** le regole sulle fonti (`shared/global.md`, `flow.md`, `SETUP-REPO.md`, `aim-higher`, `junior-deep-docs`) dicono «file e simbolo» invece di «file e funzione». Simbolo è il nome di ciò che si cita: funzione, classe, metodo, costante, chiave di configurazione o titolo di sezione. Le decisioni 15, 18 e 27 restano scritte come erano.
+
+**Perché:** un file contiene anche classi, costanti, configurazioni e sezioni, e «funzione» le lasciava fuori. `agents/contrarian.md` usava già «file and symbol».
+
+| Pro | Contro |
+|---|---|
+| Copre tutto ciò che un file contiene, non solo le funzioni | «Simbolo» è un termine tecnico: la regola lo spiega tra parentesi |
+| Come prima, si cita un nome e non un numero di riga, che invecchia prima | Un titolo di sezione non è un simbolo per il protocollo LSP: lo aggiungiamo noi |
+
+**Fonti:** scelta dell'utente, 10/11/2026; [Microsoft, Language Server Protocol Specification 3.17](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/), enumerazione `SymbolKind` (File, Module, Class, Method, Function, Constant, Key e altri, 26 in tutto), letta il 10/11/2026. Nessuna misura.

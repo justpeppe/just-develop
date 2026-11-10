@@ -37,7 +37,7 @@ Keep `docs/index.mdx`, `docs/docs.json` and `docs/SUMMARY.md` listing every page
 - Each page and section opens with a statement about the system itself.
 - Plain prose, edited with `humanizer`, in text without emoji.
 - Code that contains `|`, `{}` or `<>` goes in a fenced block outside table cells, so MDX parses it.
-- Point at code by file and function; quoted code matches the current source.
+- Point at code by file and symbol; quoted code matches the current source.
 
 ## Done when
 
