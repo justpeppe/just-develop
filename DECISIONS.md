@@ -267,3 +267,16 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | Stato e `## Answer` viaggiano insieme | Il divieto di `/implement` è una regola scritta, nessun hook lo impone |
 
 **Fonti:** scelta dell'utente, 8/11/2026; `implement/SKILL.md` di Matt Pocock, letta l'8/11/2026. Nessuna misura.
+
+## 27. Via `write-docs`; `aim-higher`, `ui-ux-doctrine` e `junior-deep-docs` riscritte in inglese
+
+**Scelta:** `write-docs` esce dal setup. Le altre tre skill dell'utente sono riscritte in inglese con `writing-for-agents`: niente esempi Delphi, niente `file:riga` né copertura "righe 1..N", citazioni per file e funzione, un criterio di fine esplicito («Done when»). `ui-ux-doctrine` tiene solo numeri con una fonte: i 24 px dei bersagli da WCAG 2.2 e i limiti di risposta di Nielsen (0,1 s, 1 s, 10 s). `aim-higher` prende la versione "principio e causa" invece di quella basata sul metodo di Felix Rieseberg (Altitude, Depth, Range: l'obiettivo dietro l'obiettivo, il lavoro da esperto, le idee da campi vicini).
+
+**Perché:** `write-docs` è la skill ufficiale di GitBook per gli spazi GitBook, la loro sincronizzazione con un repo Git (Git Sync) e le change request; qui la guida è Mintlify e `SUMMARY.md` serve solo per compatibilità. Le skill sono in inglese come le altre installate, e la lingua delle risposte resta una sola regola, in `personal/global.md`. La versione Rieseberg di `aim-higher` chiedeva di arrivare fino al «Rung 3 (Durable Engine)», un meccanismo che renda obsoleto il lavoro futuro, e di trattare ogni obiettivo difficile come ragionevole: due spinte ad allargare il lavoro, contro la regola Scope di `shared/global.md`.
+
+| Pro | Contro |
+|---|---|
+| Una descrizione in meno nel contesto di ogni sessione | Chi pubblica su GitBook deve installarla da sé: `npx skills add GitBookIO/gitbook-skills` |
+| Le tre skill non citano più Delphi né un repo specifico (controllato con `grep`) | Le versioni nuove non sono ancora provate su un lavoro reale |
+
+**Fonti:** scelta dell'utente, 10/11/2026; `SKILL.md` della vecchia `aim-higher`, Altitude e regola 5, letta il 10/11/2026; [GitBook, AI coding assistants and SKILL.md](https://gitbook.com/docs/getting-started/ai-documentation/ai-coding-assistants-and-skillmd), letta il 10/11/2026; [W3C, Understanding SC 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html), letta il 10/11/2026. I limiti di Nielsen vengono da fonti secondarie viste in ricerca il 10/11/2026, [video NN/g](https://www.nngroup.com/videos/3-response-time-limits-interaction-design/) e [Nielsen, Time Scales of UX](https://jakobnielsenphd.substack.com/p/time-scale-ux): l'articolo originale non è stato letto. Nessuna misura.

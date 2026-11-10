@@ -36,13 +36,8 @@ docs/
 └── <sezioni-del-progetto>/    # Una pagina .md/.mdx per ogni Area funzionale reale (es. login.md, pagamenti.md)
 ```
 
-### Il flusso interno di `junior-deep-docs` (6 domande di indagine sul codice + 5 passi di scrittura)
-Prima di scrivere o aggiornare una pagina, l'AI legge i file sorgente e risponde alle **6 domande di indagine di `junior-deep-docs`** (confini dei file, catena degli eventi a runtime, strutture dati/unità di misura/thread, blocchi consecutivi `righe 1..N`, API/parametri/flag, casi limite/verifica), e poi stende la pagina con titoli naturali sul codice (zero emoji, zero etichette `Livello 1..4`):
-1. **Apertura chiara, tabella di tutti i file del modulo (`File | Righe | Ruolo | Chi lo chiama | Confini`) e diagramma verticale `flowchart TD`.**
-2. **Il flusso passo-passo quando il programma gira (`<Steps>`):** più tabella `Controllo → Evento → Metodo` (se c'è UI) e tabella di tutte le strutture dati e dei campi di stato con **unità di misura esplicite** (`ms`, `sec`, `byte`, `0..1`) e vincoli di thread.
-3. **Spiegazione tecnica dei componenti e dei metodi chiave del modulo:** la logica e gli algoritmi centrali spiegati chiaramente con i tipi di dati reali, lo scopo esatto di ogni parametro, le unità di misura, i vincoli di thread e perché è implementato in quel modo (senza trascrivere rigidamente elenchi di righe consecutive 1..N che diventano obsoleti al primo edit).
-4. **Tabella completa di tutte le Funzioni, API, Parametri, Flag e Trappole (`<Warning>` / `<AccordionGroup>`).**
-5. **Accumulo dalle domande in chat (*Query -> Wiki*):** ogni volta che l'utente chiede in chat un approfondimento sul perché di un meccanismo, parametro o flag, l'AI risponde in chat e aggiunge quel chiarimento nella pagina corrispondente di `docs/`.
+### Come si scrive una pagina
+Le domande di indagine sul codice, la struttura della pagina, lo stile e i controlli di fine sono nella skill `junior-deep-docs`: leggila prima di scrivere o rivedere una pagina di `docs/`.
 
 ---
 

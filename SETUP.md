@@ -37,7 +37,7 @@ Unica tabella di ciò che il setup installa e aggiorna.
 
 Ponytail resta plugin perché il suo hook lo tiene sempre attivo. Le altre fonti sono solo skill: la CLI tiene una copia in `~/.agents/skills` e la collega a entrambi gli agenti.
 
-Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrine`, `write-docs`, `aim-higher`. Se ne manca una, elencala nel report finale e continua. Se una di queste esiste in `~/.agents/skills/<nome>` ma non in `~/.claude/skills/<nome>`, collegala lì con un link simbolico (su Windows una junction), altrimenti Claude Code non la vede.
+Skill dell'utente, senza fonte pubblica nota: `junior-deep-docs`, `ui-ux-doctrine`, `aim-higher`. Se ne manca una, elencala nel report finale e continua. Se una di queste esiste in `~/.agents/skills/<nome>` ma non in `~/.claude/skills/<nome>`, collegala lì con un link simbolico (su Windows una junction), altrimenti Claude Code non la vede.
 
 ## Installa
 
