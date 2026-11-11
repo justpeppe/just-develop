@@ -18,6 +18,15 @@ Il modello più piccolo di Claude, usato come subagente per cercare file o simbo
 **Argon**:
 Il modello principale di Google (Gemini 4 Argon) dentro Antigravity Ultra che implementa i ticket e applica i fix.
 
+**Progettista**:
+Il ruolo di chi fa grilling, spec, ticket e diagnosi dei bug. Oggi è Opus in Claude Code; può farlo anche Gemini 4 Carbon in Antigravity.
+
+**Esecutore**:
+Il ruolo di chi implementa un ticket: Gemini Flash o Argon, secondo la riga `Esecutore:` del ticket.
+
+**Revisore**:
+Il ruolo di chi controlla il lavoro degli altri: i tre subagenti della Doppia Review e il contrarian.
+
 **Antigravity**:
 L'IDE di Google dove lavori con Argon usando la quota del piano Ultra, separata da quella di Claude Code.
 
@@ -53,6 +62,19 @@ Il documento (`spec.md` in `.scratch/`) che fissa cosa costruire e perché, scri
 **Ticket**:
 Un pezzo di lavoro piccolo e autonomo salvato su disco in `.scratch/`, con un obiettivo chiaro e criteri di verifica.
 _Avoid_: task (`task` è solo uno dei valori del campo `Type`).
+
+**Nucleo**:
+La parte delle regole che ogni agente legge sempre, in ogni sessione: ruoli, lingua, fonti, il ciclo in breve e i commit. Il resto del flusso sta nelle skill e si apre solo quando serve.
+
+**Fondamenta**:
+Ciò che ogni repo deve avere prima del primo ticket: `AGENTS.md` con un comando dei test provato, `docs/` e le skill di Matt Pocock configurate. In un repo con una storia vengono dopo l'analisi e l'allineamento.
+
+**Repo ibrido**:
+Un repo condiviso con colleghi in cui tutto il materiale degli agenti resta solo sulla tua macchina: regole, spec e ticket, skill e la guida `docs/`. Nel repo comune arrivano solo codice e test.
+_Avoid_: repo misto.
+
+**Repo versionato**:
+Un repo in cui anche il materiale degli agenti è salvato in git, come questo.
 
 **Contrarian**:
 L'agente di Claude Code che fa il premortem dei ticket: finiti i ticket e prima del codice, immagina che il lavoro sia già fallito e cerca perché, nel codice e in qualsiasi fonte. Ogni obiezione porta una prova che chiunque può riaprire; può anche scrivere ed eseguire script di verifica, nella sua cartella in `.scratch/`. Spec, ticket e codice li cambi tu.
