@@ -21,7 +21,7 @@ Manuale rapido per l'uso quotidiano. Le regole compatte lette a ogni turno stann
 | Controllare novità cross-PC e skill subito | Terminale | `python -X utf8 -I scripts/check-updates.py` |
 | Aggiornare skill, plugin e MCP | Claude | `Aggiorna il setup seguendo SETUP.md` |
 | Cercare MCP utili per te | Claude | `Cerca MCP utili seguendo SETUP.md` |
-| Analizzare o allineare un progetto | Claude | `Analizza/Allinea questo repo seguendo SETUP-REPO.md` |
+| Analizzare o migrare uno o più progetti a v2 | Claude / Antigravity | `Analizza/Allinea questo repo seguendo SETUP-REPO.md` (con `/swarm` su Ultra per più repo) |
 
 ## 2. Modelli reali (Casa Pro vs Ufficio Ultra)
 

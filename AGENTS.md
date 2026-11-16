@@ -18,7 +18,7 @@ Single-context. Dettagli in `docs/agents/domain.md` e `GLOSSARY.md`.
 
 ## Aree a rischio
 
-Gli hook in `hooks/` (guardrail Claude/AGY e hook Git `pre-commit`, `commit-msg`, `post-merge`, `post-checkout`, `post-rewrite`) e gli script in `scripts/` (`sync-from-claude.py`, `session_check.py`, `background_checker.py`, `check-updates.py`): un errore qui spegne i guardrail, rompe il sync di Antigravity o blocca le pipe di `SessionStart`.
+Gli hook in `hooks/` (guardrail Claude/AGY e hook Git `pre-commit`, `commit-msg`, `post-merge`, `post-checkout`, `post-rewrite`) e gli script in `scripts/` (`sync-from-claude.py`, `session_check.py`, `background_checker.py`, `check-updates.py`, `extract-repo-retro.py`): un errore qui spegne i guardrail, rompe il sync di Antigravity, fa filtrare credenziali nei digest o blocca le pipe di `SessionStart`.
 
 ## Branch e Commit
 

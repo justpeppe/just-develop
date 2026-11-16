@@ -7,7 +7,8 @@ Prima di ogni passo spiega in una frase di italiano semplice cosa fai e perché.
 | L'utente chiede di | Ramo |
 |---|---|
 | Capire cosa funziona e come migliorare gli agenti su questo repo | [Analizza](#analizza) |
-| Preparare un repo nuovo o rimettere ordine in uno esistente | [Analizza](#analizza), poi [Allinea](#allinea) |
+| Preparare un repo nuovo, allinearlo o migrarlo alla v2 | [Analizza](#analizza), poi [Allinea](#allinea) |
+| Allineare più repo avviati in parallelo (piano Antigravity Ultra) | [Swarm multi-repo (Ultra)](#swarm-multi-repo-ultra) |
 
 ## Regole di ogni ramo
 
@@ -37,7 +38,13 @@ Chiedi se `TARGET` è `Repo versionato` o `Repo ibrido` e quale periodo guardare
 | Regole attive | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/`, `.claude/`, `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, `~/.gemini/config/rules/` | Pagine Memory e Rules |
 | Lavoro svolto | `.scratch/`, sezioni `## Answer`, `git log`, esiti di test e CI | Il repo |
 
-Usa solo le sessioni di `TARGET`: per Claude la cartella ha il nome del progetto, per Gemini cerca il percorso di `TARGET` dentro ogni trascrizione. Le tracce di ragionamento si analizzano quando compaiono nelle trascrizioni; Google non documenta se ci sono. *Fatto quando* ogni riga ha quante sessioni o file hai letto, oppure il motivo per cui manca.
+Usa solo le sessioni di `TARGET` e non leggere mai i `.jsonl` grezzi direttamente con `read_file` o `Read`: in Antigravity i `.jsonl > 100 KB` vengono bloccati dall'hook e pesano inutilmente in token. Esegui prima l'estrattore deterministico a zero token (`PY` è `python` se esiste, altrimenti `python3`; usa `--days 30` per audit normali oppure `--days 0` per migrare un repo esistente alla v2):
+
+```text
+PY -X utf8 -I "REPO/scripts/extract-repo-retro.py" "TARGET" --days 30 --out "TARGET/.scratch/_retro-digest.md"
+```
+
+Leggi poi `TARGET/.scratch/_retro-digest.md` (che redige eventuali token/password ed elenca memorie, conteggi reali di skill/MCP, correzioni utente, errori ricorrenti e debito v2 del repo) con `1-2` subagenti in sola lettura su `Claude Code` / `Antigravity Pro`, oppure su `Antigravity Ultra` con un piccolo `/swarm` (`2` worker + `1` worker revisore con gli 8 criteri del passo 6; `agents/contrarian.md` resta per Claude Code). Su `/swarm` ogni post entra nel contesto di tutti i worker, quindi sui piani `Pro` usa i subagenti normali. Le tracce di ragionamento si analizzano quando compaiono nelle trascrizioni; Google non documenta se ci sono. *Fatto quando* ogni riga ha quante sessioni o file hai analizzato, oppure il motivo per cui manca.
 
 ### 3. Confronta regole e comportamento
 
@@ -95,7 +102,7 @@ Dai all'utente, in italiano semplice:
 - al massimo 7 proposte, dalla più utile, ognuna con `Problema e prova | Causa | Modifica e dove | Pro | Contro | Fonte | Giudice`;
 - ciò che hai scartato e perché, in una riga per voce.
 
-*Fatto quando* l'utente ha scelto cosa applicare. Applica solo quello, poi esegui i controlli elencati nell'`AGENTS.md` di `TARGET`.
+*Fatto quando* l'utente ha scelto cosa applicare. Applica solo quello, elimina l'eventuale file temporaneo `TARGET/.scratch/_retro-digest.md` se non prosegui con [Allinea](#allinea), poi esegui i controlli elencati nell'`AGENTS.md` di `TARGET`.
 
 ## Allinea
 
@@ -108,12 +115,21 @@ Esegui questo ramo dopo Analizza e usa le sue proposte accettate per decidere co
 2. **Trova il materiale degli agenti.** Ogni file che istruisce, configura o alimenta un agente, anche fuori dai nomi soliti e anche ignorato da git: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/`, `.claude/`, `.gemini/`, `.cursor/`, `.codex/`, `.mcp.json`, `skills-lock.json`, `docs/agents/`, `.scratch/`, file di prompt e note di passaggio, più le memorie Claude e la conoscenza Gemini di questo progetto. Cerca e leggi radice e `docs/`. *Fatto quando* l'utente conferma una tabella con percorso e scopo.
 3. **Rivedi le regole di esclusione.** Per ogni voce di `.gitignore` e `.git/info/exclude` consiglia se tenerla, spostarla o toglierla in base alla modalità (`Repo versionato` vs `Repo ibrido`). *Fatto quando* l'utente ha deciso voce per voce.
 4. **Archivia, dopo il sì dell'utente.** `git tag pre-cleanup`, aggiungi `archive/` a `.git/info/exclude` e sposta lì il materiale obsoleto, mantenendo i percorsi. Le memorie vanno in `archive/claude-memory/` e `archive/antigravity-knowledge/`. *Fatto quando* `git status` mostra il materiale fuori dall'albero e il tag esiste.
-5. **Configura le fondamenta (`AGENTS.md`, `docs/agents/`, `tests/run.py`).** Se mancano i file di issue tracker/triage/domain, chiedi all'utente di lanciare `/setup-matt-pocock-skills` (solo per `Repo versionato` o escludendoli in `Repo ibrido`). Assicurati che `AGENTS.md` contenga: modalità (`Repo versionato` o `Repo ibrido`), `## Aree a rischio`, `## Verifiche` con il comando testato (es. `python -X utf8 -I tests/run.py`), e il puntamento a `docs/`.
-6. **Decidi cosa torna.** Chiedi all'utente di eseguire `/flow-design` (o `/grill-with-docs`) per decidere cosa torna da `archive/`, e applica ogni decisione:
+5. **Configura le fondamenta (`AGENTS.md`, `docs/agents/`, `tests/run.py`) e rimuovi i vecchi `file:riga`.** Se mancano i file di issue tracker/triage/domain, chiedi all'utente di lanciare `/setup-matt-pocock-skills` (solo per `Repo versionato` o escludendoli in `Repo ibrido`). Assicurati che `AGENTS.md` contenga: modalità (`Repo versionato` o `Repo ibrido`), `## Aree a rischio`, `## Verifiche` con il comando testato (es. `python -X utf8 -I tests/run.py`), e il puntamento a `docs/`. Sostituisci ogni riferimento statico `file:riga` o `#L...` in `AGENTS.md` e `CODING_STANDARDS.md` con **`file + simbolo`** verificati sul codice reale; promuovi le note utili di `~/.claude/projects/<repo>/memory/` in `AGENTS.md` o `CODING_STANDARDS.md`, e se la macchina ha una regola locale condizionale per quello stack (`~/.claude/rules/` o `~/.gemini/config/rules/`), aggiungi 3 righe invarianti + puntatore in `AGENTS.md`.
+6. **Decidi cosa torna e converti solo i ticket aperti.** Chiedi all'utente di confermare cosa tenere da `archive/` e dalle correzioni estratte in `_retro-digest.md` (o apri `/flow-design` sui punti ancora incerti), e applica ogni decisione:
    - Le istruzioni vanno in `AGENTS.md`, filtrate dal passo 6 di Analizza. `CLAUDE.md` contiene solo `@AGENTS.md`: Claude Code legge `CLAUDE.md` (Anthropic, Memory), Antigravity legge `AGENTS.md` (Google, Rules).
    - Una skill che serve a un solo progetto si installa senza `-g` (in `.agents/skills/<nome>/` con link in `.claude/skills/<nome>`).
    - Le 5 skill globali di `REPO/skills/` (`aim-higher`, `junior-deep-docs`, `ui-ux-doctrine`, `flow-design`, `implement-ticket`) arrivano già tramite le junction globali di `SETUP.md`.
    - Scrivi le regole senza nomi di strumenti esclusivi di un solo agente.
+   - **Ticket `.scratch/` e vecchie pagine `docs/`:** lascia intatti tutti i ticket già chiusi (`Status: resolved`, incluso `resolved (<hash>)`, o `wontfix`). Converti al contratto v2 (`file + simbolo` verificati, `Metrica (S/G/C):`, `Review: quick | double`, `Esecutore:`, `Verificato:`) **tutti i ticket e le `spec.md` ancora aperti** presenti in `.scratch/` (stati diversi da `resolved`/`wontfix`: `ready-for-agent`, `needs-triage`, `needs-info`, `ready-for-human`, `claimed`). Non rigenerare in blocco le vecchie pagine `docs/` con riferimenti di riga: si aggiornano *on-touch* quando un nuovo ticket tocca quel modulo.
 
-   *Fatto quando* ogni riga della tabella è segnata come ripristinata, riscritta o lasciata in archivio.
-7. **Codice legacy e verifiche finali.** Su codice senza test: prima fissa cosa produce oggi con test di caratterizzazione sul modulo che toccherai per primo ([Feathers, tramite Wikipedia](https://en.wikipedia.org/wiki/Characterization_test)); tieni i cambi di struttura in commit separati dai cambi di comportamento ([Beck, Tidy First?](https://www.oreilly.com/library/view/tidy-first/9781098151232/)). Crea il catalogo base in `docs/index.mdx` con `junior-deep-docs`, esegui i controlli di `AGENTS.md` e `tests/run.py` fino a exit `0`. Fai il commit solo dopo il sì dell'utente; il push lo fa lui.
+   *Fatto quando* ogni riga della tabella è segnata come ripristinata, riscritta o lasciata in archivio e tutti i ticket aperti sono allineati a v2.
+7. **Codice legacy, pulizia temporanei e verifiche finali.** Su codice senza test: prima fissa cosa produce oggi con test di caratterizzazione sul modulo che toccherai per primo ([Feathers, tramite Wikipedia](https://en.wikipedia.org/wiki/Characterization_test)); tieni i cambi di struttura in commit separati dai cambi di comportamento ([Beck, Tidy First?](https://www.oreilly.com/library/view/tidy-first/9781098151232/)). Crea il catalogo base in `docs/index.mdx` con `junior-deep-docs` se assente, elimina il file temporaneo `.scratch/_retro-digest.md`, esegui i controlli di `AGENTS.md` e `tests/run.py` fino a exit `0`. Fai il commit solo dopo il sì dell'utente; il push lo fa lui.
+
+## Swarm multi-repo (Ultra)
+
+Modalità pensata per **Antigravity Ultra** quando devi migrare alla v2 più repository già avviati in un solo turno:
+
+1. **Estrazione a zero token:** esegui `PY -X utf8 -I "REPO/scripts/extract-repo-retro.py" "<repo>" --days 0 --out "<repo>/.scratch/_retro-digest.md"` su ciascun repository target.
+2. **Swarm a proprietà disgiunta:** avvia `/swarm` su `Hydrogen Medium` con **1 worker per repository** (ogni worker legge in sola lettura il proprio `_retro-digest.md`, i propri `AGENTS.md`/`CODING_STANDARDS.md`, le memorie Claude e i ticket/spec non chiusi, e pubblica in bacheca la tabella di `Analizza` + `Allinea` proposta, senza toccare ancora alcun file) più **1 worker revisore** con gli 8 requisiti del passo 6 (`agents/contrarian.md` impone `antigravity: false`, quindi in `/swarm` lavora tramite prompt inline) che filtra le proposte di tutti i repository.
+3. **Conferma e applicazione:** presenta all'utente il piano filtrato per ciascun repository. Dopo il suo ok, ogni worker applica `Allinea` (passi 1-7) solo sul proprio repository, cancella `_retro-digest.md` ed esegue i controlli reali del progetto; i commit restano in attesa del sì finale dell'utente.

@@ -424,3 +424,17 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 
 | Meno carico statico su entrambi i client e cache più stabile | Per usare `/ponytail-audit` o `/ponytail-debt` occorre riabilitare manualmente il plugin |
 
 **Fonti:** spec `.scratch/allineamento-v2/spec.md` e premortem `.scratch/allineamento-v2/contrarian/premortem.md` (`2026-11-16`).
+
+## 37. Pre-filtraggio trascrizioni `.jsonl` con `extract-repo-retro.py` e `/swarm` multi-repo su Ultra
+
+**Data:** 2026-11-16
+
+**Scelta:** aggiungere `scripts/extract-repo-retro.py` (stdlib pura, multipiattaforma, redazione segreti) come passo preliminare di `SETUP-REPO.md` prima di ogni analisi delle trascrizioni; usare `/swarm` (`1` worker disgiunto per repo + `1` worker revisore inline sugli 8 requisiti di filtro, dato che `agents/contrarian.md` resta in Claude Code) sul piano Antigravity Ultra e normali subagenti sui piani Pro/Claude; convertire a v2 (`file + simbolo`, `S/G/C`, `Review`, `Esecutore`, `Verificato`) solo `AGENTS.md`, `CODING_STANDARDS.md` e tutti i ticket/spec non chiusi, lasciando le vecchie pagine `docs/` all'aggiornamento *on-touch*.
+
+**Perché:** centinaia di MB di `.jsonl` vengono bloccati da `block-secrets-read.js` oltre `100 KB` o brucerebbero milioni di token se letti dai modelli, mentre `/swarm` replica ogni post della bacheca nel contesto di tutti i worker e conviene solo con capacità Ultra o quando più repo procedono in parallelo.
+
+| Pro | Contro |
+|---|---|
+| Riusa le correzioni reali dalle chat passate con pochi KB di contesto e zero rischi segreti | Aggiunge uno script da mantenere allineato ai formati `.jsonl` di Claude e Antigravity |
+
+**Fonti:** `SETUP-REPO.md`, `hooks/antigravity/block-secrets-read.js` (`JSONL_MAX_BYTES`), `native_swarm/SKILL.md` (`2026-11-16`).

@@ -874,6 +874,129 @@ def check_budgets_docs_and_antileak(fails):
                     fails.append(f'anti-leak: local blocked term {term!r} found in {f}')
 
 
+def check_extract_repo_retro(fails):
+    script = os.path.join(R, 'scripts', 'extract-repo-retro.py')
+    if not os.path.isfile(script):
+        fails.append('extract-repo-retro: script missing')
+        return
+
+    with tempfile.TemporaryDirectory() as td:
+        td = os.path.realpath(td)
+        repo = os.path.join(td, 'my-app')
+        sibling_repo = os.path.join(td, 'my-app-v2')
+        claude_dir = os.path.join(td, 'claude-projects')
+        agy_dir_a = os.path.join(td, 'agy-root-a', 'brain')
+        agy_dir_b = os.path.join(td, 'agy-root-b', 'brain')
+        digest_out = os.path.join(td, 'digest.md')
+
+        os.makedirs(os.path.join(repo, '.scratch', 'f1', 'issues'), exist_ok=True)
+        os.makedirs(os.path.join(repo, 'docs'), exist_ok=True)
+        os.makedirs(sibling_repo, exist_ok=True)
+        with open(os.path.join(repo, 'AGENTS.md'), 'w', encoding='utf-8') as f:
+            f.write('Modalita: Repo ibrido\n## Aree a rischio\nsrc/app.py:42\nhttp://127.0.0.1:8000\nstream.example.com:7982\n## Verifiche\npytest\n')
+        with open(os.path.join(repo, '.scratch', 'f1', 'issues', '01-open.md'), 'w', encoding='utf-8') as f:
+            f.write('**Status:** ready-for-agent\nTocca src/app.py:12\n')
+        with open(os.path.join(repo, '.scratch', 'f1', 'issues', '02-done.md'), 'w', encoding='utf-8') as f:
+            f.write('**Status:** resolved (d6e85ea)\nVecchio src/old.py:99\n')
+        with open(os.path.join(repo, '.scratch', 'f1', 'issues', '03-v2ok.md'), 'w', encoding='utf-8') as f:
+            f.write('**Status:** needs-triage\nMetrica (S/G/C): 0/0/0\nReview: quick\nEsecutore: Hydrogen Low\nVerificato: 2026-11-16 @ abcdef1\n')
+        with open(os.path.join(repo, 'docs', 'mod.md'), 'w', encoding='utf-8') as f:
+            f.write('# Mod\nVedi src/app.py:77\n')
+
+        real_repo = os.path.realpath(repo)
+        real_sibling = os.path.realpath(sibling_repo)
+        slug = re.sub(r'[^A-Za-z0-9-]', '-', real_repo)
+        pdir = os.path.join(claude_dir, slug)
+        os.makedirs(os.path.join(pdir, 'memory'), exist_ok=True)
+        with open(os.path.join(pdir, 'memory', 'lesson.md'), 'w', encoding='utf-8') as f:
+            f.write('Remember rule\n')
+
+        claude_rows = [
+            {'type': 'api-request-blob', 'message': {'content': 'noise'}},
+            {'type': 'user', 'isMeta': True, 'message': {'content': 'no, meta skill prompt should not count'}},
+            {'type': 'user', 'message': {'content': 'no, non toccare src/app.py access_token=tok99887766 Basic QWxhZGRpbjpvcGVu https://alice:s3cr3tp4ss@example.com/api'}},
+            {'type': 'assistant', 'message': {'content': [{'type': 'tool_use', 'name': 'Skill', 'input': {'skill': 'flow-design'}}]}},
+            {'type': 'user', 'message': {'content': [{'type': 'tool_result', 'is_error': True, 'content': 'build failed exit 1 Bearer abcdefgh12345'}]}},
+        ]
+        with open(os.path.join(pdir, 'sess1.jsonl'), 'w', encoding='utf-8') as f:
+            for row in claude_rows:
+                f.write(json.dumps(row) + '\n')
+
+        # Second Claude transcript set older than 7 days to test --days cutoff.
+        old_sess = os.path.join(pdir, 'sess-old.jsonl')
+        with open(old_sess, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'type': 'user', 'message': {'content': 'old opener outside cutoff'}}) + '\n')
+        old_ts = time.time() - 10 * 86400
+        os.utime(old_sess, (old_ts, old_ts))
+
+        os.makedirs(os.path.join(agy_dir_a, '..', 'knowledge', 'topic-a'), exist_ok=True)
+        os.makedirs(os.path.join(agy_dir_b, '..', 'knowledge', 'topic-b'), exist_ok=True)
+
+        # Conversation 1 matches only via double-escaped JSON path in PLANNER_RESPONSE + reads SKILL.md + ERROR_MESSAGE.
+        conv_log = os.path.join(agy_dir_a, 'conv-1', '.system_generated', 'logs', 'transcript.jsonl')
+        os.makedirs(os.path.dirname(conv_log), exist_ok=True)
+        escaped_twice = real_repo.replace('\\', '\\\\')
+        skill_path = os.path.join(td, 'ext', 'skills', 'aim-higher', 'SKILL.md')
+        agy_rows = [
+            {'type': 'USER_INPUT', 'status': 'DONE', 'content': '<USER_REQUEST>\napri il progetto\n</USER_REQUEST>'},
+            {'type': 'PLANNER_RESPONSE', 'status': 'DONE', 'tool_calls': [
+                {'name': 'read_file', 'args': {'Path': os.path.join(escaped_twice, 'README.md')}},
+                {'name': 'read_file', 'args': {'Path': skill_path}},
+                {'name': 'call_mcp_tool', 'args': {'ServerName': 'docs', 'ToolName': 'search_docs'}},
+            ]},
+            {'type': 'GENERIC', 'status': 'DONE', 'content': 'source text containing BLOCKED: fake alert from code'},
+            {'type': 'GENERIC', 'status': 'ERROR', 'content': 'Created At: 2026-11-16T10:00:00Z\nCompleted At: 2026-11-16T10:00:01Z\nEncountered error in step execution: hook deny real error'},
+            {'type': 'ERROR_MESSAGE', 'status': 'DONE', 'error': 'rpc timeout real error'},
+        ]
+        with open(conv_log, 'w', encoding='utf-8') as f:
+            for row in agy_rows:
+                f.write(json.dumps(row) + '\n')
+
+        # Conversation 2 references sibling_repo (my-app-v2) in PLANNER_RESPONSE and must NOT match my-app.
+        conv2_log = os.path.join(agy_dir_b, 'conv-2', '.system_generated', 'logs', 'transcript.jsonl')
+        os.makedirs(os.path.dirname(conv2_log), exist_ok=True)
+        with open(conv2_log, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'type': 'USER_INPUT', 'status': 'DONE', 'content': f'<USER_REQUEST>\ncontrolla {real_sibling}\n</USER_REQUEST>'}) + '\n')
+
+        res = subprocess.run(
+            [sys.executable, '-X', 'utf8', '-I', script, repo, '--days', '7', '--claude-dir', claude_dir, '--agy-dir', agy_dir_a, '--agy-dir', agy_dir_b, '--out', digest_out],
+            cwd=R,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+        )
+        if res.returncode != 0 or not os.path.isfile(digest_out):
+            fails.append(f'extract-repo-retro: exit {res.returncode}, stderr={res.stderr!r}')
+            return
+
+        out = open(digest_out, encoding='utf-8').read()
+        for needle in (
+            'non toccare src/app.py',
+            '[REDACTED]',
+            'memory/lesson.md',
+            'topic-a',
+            'topic-b',
+            'flow-design',
+            'aim-higher',
+            'docs:search_docs',
+            'src/app.py:42',
+            '1 riferimenti statici',
+            '**Antigravity:** 1 sessioni',
+            'Turni utente estratti:** 2',
+            '01-open.md',
+            'mancanti=Metrica (S/G/C), Review, Esecutore, Verificato',
+            '03-v2ok.md` (status=`needs-triage`, riga_refs=0, mancanti=header v2 ok)',
+            'hook deny real error',
+            'rpc timeout real error',
+            '1 / 1',
+        ):
+            if needle not in out:
+                fails.append(f'extract-repo-retro: missing {needle!r} in digest')
+        for unwanted in ('tok99887766', 'QWxhZGRpbjpvcGVu', 's3cr3tp4ss', 'abcdefgh12345', '02-done.md', '127.0.0.1:8000', 'example.com:7982', 'meta skill prompt', 'old opener outside cutoff', 'fake alert from code'):
+            if unwanted in out:
+                fails.append(f'extract-repo-retro: unexpected {unwanted!r} in digest')
+
+
 def main():
     fails = []
     check_git_and_secret_guardrails(fails)
@@ -881,6 +1004,7 @@ def main():
     check_git_hooks(fails)
     check_pipe_lock_and_mergetree(fails)
     check_budgets_docs_and_antileak(fails)
+    check_extract_repo_retro(fails)
     if os.path.exists(os.path.join(R, 'hooks', 'antigravity', 'block-dangerous-git.log')):
         fails.append('hooks/antigravity/block-dangerous-git.log must not exist in repo')
     print('\n'.join(fails) or 'ok')

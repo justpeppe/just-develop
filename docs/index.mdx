@@ -111,6 +111,7 @@ Per forzare subito il controllo di rete senza attendere il turno successivo eseg
 | `scripts/session_check.py` | Hook `SessionStart` (`< 50 ms`, zero rete) che mostra novità e lancia il checker in background |
 | `scripts/background_checker.py` | Worker staccato con lock kernel OS per il controllo 8h Git cross-PC e 24h `git ls-remote` skill/plugin |
 | `scripts/check-updates.py` | Esegue in modo sincrono e interattivo lo stesso controllo aggiornamenti di `background_checker.py` |
+| `scripts/extract-repo-retro.py` | Condensa a zero token le trascrizioni `.jsonl` Claude/AGY e il debito v2 di un repo (`SETUP-REPO.md`) |
 | `tests/run.py` | Suite di test automatica su guardrail, `commit-msg`, sync, pipe/lock safety, budget token, anti-leak e `docs/` |
 | `mcp.json` | Elenco condiviso dei server MCP generici |
 | `docs/docs.json`, `docs/SUMMARY.md` | Configurazione navigazione Mintlify e indice GitBook |
