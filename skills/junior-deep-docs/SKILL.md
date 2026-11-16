@@ -1,46 +1,47 @@
 ---
 name: junior-deep-docs
-description: Write or update the code guide in docs/ (Mintlify, with a GitBook-compatible SUMMARY.md) so a junior developer understands how the code works, down to every function, data field, API parameter and flag. Use after a change touches code that docs/ explains, when the user asks to document a module, or when a question about the code in chat deserves to be kept.
+description: Write or update docs/ (Mintlify + GitBook SUMMARY.md) for a junior developer: runtime chains, state fields with units/threads, and every function, API parameter, and flag. Trigger after changing documented code, when asked to document a module, or to keep a chat explanation of code.
 ---
 
 # Junior deep docs
 
-The reader is a junior developer who must understand what runs under the hood. Every mechanism gets its explanation; nothing stays a black box.
+The reader is a junior developer learning what runs under the hood. Explain every mechanism in full so the module is transparent from trigger to side effect.
 
 ## 1. Investigate
 
-Read the module's source in full before writing, and answer six questions:
+Read the module's source before writing and answer six questions:
 
-1. **Boundaries:** which files belong to the module, who calls it, what it leaves to other modules.
-2. **Runtime chain:** in order, what happens from the trigger (a click, a command, a hook, a request) to the final effect: `trigger -> handler -> function -> called function`.
-3. **State:** every type, record, enum, field or JSON structure that holds state; for each field its unit (`ms`, `byte`, `Hz`, range `0..1`), who creates and frees it, and which thread reads and writes it.
-4. **Inventory:** every function, constant, regular expression and type in each file.
-5. **Calls:** for each project function and each external API call, what each parameter means, what each flag does, the type and unit of the return value, and why this call instead of an alternative.
-6. **Traps and checks:** the defences in the code against subtle bugs (encoding marks, path quirks, deadlocks, null references, quoting) and the command or manual test that verifies the module.
+1. **Boundaries:** which files belong to the module, who calls it, and what it delegates elsewhere.
+2. **Runtime chain:** in order, what happens from trigger (click, command, hook, request) to final effect: `trigger -> handler -> function -> called function`.
+3. **State:** every type, record, struct, enum, field, or JSON schema holding state; for each field list its unit (`ms`, `byte`, `Hz`, `0..1`), ownership (who creates/frees), and thread constraints.
+4. **Inventory:** every public or key function, constant, pattern, and type in each file by **file and symbol**.
+5. **Calls:** for each project function and external API call, explain every parameter, flag, return type and unit, and why this call was chosen over alternatives.
+6. **Traps and checks:** built-in defences against subtle bugs (encoding, path quirks, races, null/empty values, quoting) and the command or manual check verifying the module.
 
-*Done when* the boundaries are written down and every item in the inventory has its answers to questions 2, 3, 5 and 6.
+*Done when* boundaries are mapped and every inventory item answers questions 2, 3, 5, and 6.
 
 ## 2. Write the page
 
-Go from the big picture down to the single flag, with Mintlify components (`<Info>`, `<Steps>`, `<Tabs>`, `<AccordionGroup>`, `<Warning>`):
+Move from high-level behavior down to the single flag using Mintlify components (`<Info>`, `<Steps>`, `<Tabs>`, `<AccordionGroup>`, `<Warning>`):
 
-1. **What it does:** what this part of the system does in reality and which problem it solves; then the table `File | Role | Called by | Not its job` and a `flowchart TD` diagram.
-2. **The run:** `<Steps>` for the runtime chain. With a UI, the table `Control | Event | Handler | Effect`. The state table with units, ownership and thread.
-3. **Each file:** one section per file, one subsection per function or group of related code, quoting the real code and explaining each non-obvious instruction and the reason for it.
-4. **Reference:** every function and external call with parameters, flags and return values; then the traps in `<Warning>` or `<AccordionGroup>`, and the verification commands or manual test steps.
+1. **What it does & invariants:** practical role of the module, invariants and design choices (why it is shaped this way), a `File | Role | Called by | Not its job` table, and a vertical `flowchart TD` diagram.
+2. **The run:** `<Steps>` for the runtime chain, a `Control | Event | Handler | Effect` table for UI modules, and the state table with units, ownership, and thread rules.
+3. **Each file:** one section per file and one subsection per key symbol or cohesive group, quoting exact code and explaining non-obvious logic and its cause.
+4. **Reference:** functions and external calls with parameters, flags, and return types/units; traps in `<Warning>` or `<AccordionGroup>`; verification commands or manual test steps.
 
-Keep `docs/index.mdx`, `docs/docs.json` and `docs/SUMMARY.md` listing every page, and the catalogue in `docs/index.mdx` listing every file of the repo.
+Keep `docs/index.mdx` (complete repo file catalogue + page map), `docs/docs.json`, and `docs/SUMMARY.md` in sync with every page.
 
 ## Style
 
-- Each heading names the real file, mechanism or function it covers, so the sidebar alone teaches the system.
-- Each page and section opens with a statement about the system itself.
-- Plain prose, edited with `humanizer`, in text without emoji.
-- Code that contains `|`, `{}` or `<>` goes in a fenced block outside table cells, so MDX parses it.
-- Point at code by file and symbol; quoted code matches the current source.
+- Name each heading after the real file, mechanism, or symbol so the sidebar alone teaches the system.
+- Open every page and section with a direct statement about the system itself.
+- Write plain, direct prose in ASCII punctuation following `humanizer` clarity (literal headings, concrete claims, varied sentence openings, active verbs).
+- Place code containing `|`, `{}` or `<>` in fenced code blocks outside table cells so MDX parses cleanly.
+- Reference code strictly by **file and symbol**; keep quoted snippets matching the current source.
 
 ## Done when
 
-- every repo file appears in the catalogue in `docs/index.mdx`;
-- every function, type, field, external call and flag of the module is explained on its page, each one by name;
-- `npx mint dev` renders the pages without MDX errors.
+- every tracked repo file appears in the catalogue in `docs/index.mdx`;
+- `docs/docs.json` and `docs/SUMMARY.md` list every page and every listed page exists on disk;
+- every key symbol, state field (with unit/thread), external call, and flag of the touched module is documented by name;
+- `mint validate` (or `npx mint dev`) renders pages cleanly without MDX or link errors.

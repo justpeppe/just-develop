@@ -6,10 +6,12 @@
 
 **Code comments.** Plain one-line comments, separated by blank lines. Numbered steps and bullets belong in the text around the code.
 
-**Agent memory.** When the user runs `/retro` or `/grill-with-docs`, also read this project's agent memory (Claude Code: `~/.claude/projects/<project-path-with-dashes>/memory/`) and propose, entry by entry, what to promote into `AGENTS.md` and what to archive.
+**Agent memory.** When running `/retro`, `/grill-with-docs`, or `flow-design`, also read this project's agent memory (Claude Code: `~/.claude/projects/<project-path-with-dashes>/memory/`) and propose, entry by entry, what to promote into `AGENTS.md` and what to archive.
 
-**Antigravity CLI.** Never run `agy` from the terminal: it hangs until timeout. Ask the user to test in the Antigravity app instead. Never delete `~/.gemini/bin/agy`: the app's hub process runs from it.
+**Antigravity CLI.** Test Antigravity changes inside the desktop app instead of running `agy` from a terminal (which hangs until timeout), and preserve `~/.gemini/bin/agy` because the hub process runs from it.
 
-**Orchestration.** Claude decides and writes specs and tickets; Gemini implements each ticket and runs its own review, as `flow.md` describes. When a subagent did research or implementation for you, check the result before calling it done. In the same turn, without waiting for `/retro`, name each executor error that could recur and propose the line for the repo's `AGENTS.md` or the ticket template that would prevent it; apply it once the user agrees.
+**Secrets.** Read public source files and public configuration examples (`sample`, `template`, `dist`); leave private environment and settings files untouched unless the user explicitly asks to inspect a specific file.
 
-**Evidence.** Every factual claim about a tool, model or practice, and every pro and con, says where it is read: official documentation or guideline (who publishes it, which page, date read), a named author with date, the code, or a command actually run. Read live sources instead of relying on memory; prefer the last months, because models change quickly. File and symbol names are enough (a function, class, method, constant, config key or section heading): line numbers are optional, because they go stale. Mark what has no source as `non verificato`, and say so when a source measures nothing.
+**Orchestration.** Follow the roles and disk handoff in `flow.md`. When a subagent completes research or implementation, verify its result against source files before calling it done; in the same turn, name any recurring executor mistake and propose a one-line prevention for `AGENTS.md` or the ticket contract.
+
+**Evidence.** Every factual claim about a tool, model, or practice, and every pro and con, states where it was read: official documentation (publisher, page, date read), a named author with date, the source code, or a command actually run. Cite **file and symbol** names (function, class, method, constant, config key, section heading); mark missing sources as `non verificato`, and state explicitly when a source measures nothing.

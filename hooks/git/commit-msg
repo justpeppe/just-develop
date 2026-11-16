@@ -5,11 +5,18 @@ subject=$(printf '%s\n' "$message" | head -n 1)
 
 printf '%s\n' "$message" | grep -qi 'co-authored-by' && { echo "commit-msg: niente Co-Authored-By"; exit 1; }
 
+# Git-generated multi-line merge, pull request, tag, and revert messages skip single-line format checks.
+case "$subject" in
+  "Merge branch "*|"Merge branches "*|"Merge pull request "*|"Merge remote-tracking branch "*|"Merge tag "*|"Revert \""*) exit 0 ;;
+esac
+
 [ "$message" = "$subject" ] || { echo "commit-msg: una sola riga, senza corpo"; exit 1; }
 
-# Only the messages git writes by itself skip the format, plus the merge: prefix used with -m.
 case "$subject" in
-  "Merge branch "*|"Merge pull request "*|"Merge remote-tracking branch "*|"Revert \""*|"merge: "?*) exit 0 ;;
+  "merge: "?*)
+    [ "$(printf '%s\n' "${subject#merge: }" | wc -w)" -le 15 ] || { echo "commit-msg: al massimo 15 parole dopo i due punti"; exit 1; }
+    exit 0
+    ;;
 esac
 
 printf '%s\n' "$subject" | grep -Eq '^(feat|fix|refactor|docs|test|chore)\([a-z0-9-]+\): .+' || { echo "commit-msg: il formato è tipo(ambito): descrizione"; exit 1; }

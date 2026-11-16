@@ -1,91 +1,119 @@
 ---
 title: "Mappa del setup"
-description: "Come un'idea diventa un commit, cosa bloccano gli hook e come il setup arriva su Claude Code e Antigravity."
+description: "Come un'idea diventa un commit, cosa bloccano gli hook, come funziona il sync 8h/24h e il catalogo completo dei file di just-develop."
+keywords: ["setup", "flow", "hooks", "sync", "review", "skills"]
 ---
 
-Questa pagina spiega il flusso. Le regole esatte sono in `flow.md`, le decisioni e le loro fonti in `DECISIONS.md`.
+`just-develop` separa progettazione e implementazione tra Claude Code e Antigravity tramite regole always-on (`flow.md`), skill ([Guida alle skill](/skills)), guardrail deterministici e decisioni tracciate in `DECISIONS.md`.
 
 ## Da un'idea a un commit
 
 ```mermaid
 flowchart TD
-    A["Idea in italiano"] --> B["Claude: grilling e aim-higher"]
-    B --> C["Claude: spec e ticket in .scratch"]
-    C --> C2["Contrarian: premortem dei ticket, scegli tu le obiezioni"]
-    C2 --> D["Tabella dei ticket e diagramma delle dipendenze"]
-    D --> E["Gemini: Implementa il ticket N"]
-    E --> F{"Build e test verdi?"}
+    A["Idea in italiano su branch office|home/tipo/slug"] --> B["Progettista: aim-higher e grilling"]
+    B --> C["Spec e ticket verticali con S/G/C in .scratch"]
+    C --> C2["Contrarian in Claude: premortem dei ticket"]
+    C2 --> D["Tabella di consegna (rischiosi prima) e flowchart TD"]
+    D --> E["Hydrogen / Carbon / Argon: Implementa il ticket N"]
+    E --> F{"Build, test e docs ok?"}
     F -- "No" --> E
-    F -- "Sì" --> G{"Tipo di review"}
-    G -- "double" --> H["3 subagenti: Standards, Spec, ponytail-review"]
-    G -- "quick" --> I["Solo build, test e docs"]
-    H --> J["Gemini corregge da solo"]
-    J --> K["Walkthrough con diagramma e fonti"]
+    F -- "Sì" --> G{"Review binaria"}
+    G -- "quick (0/0/0)" --> I["Auto-verifica e check deterministici"]
+    G -- "double (almeno un 1)" --> H["3 subagenti inherit: Standards, Spec, ponytail-review"]
+    H --> J["Fix in una passata e ri-verifica"]
+    J --> K["Answer e Walkthrough in 5 sezioni"]
     I --> K
-    K --> L{"Serve una prova manuale?"}
+    K --> L{"Serve prova manuale HITL?"}
     L -- "Sì" --> M["La fai tu"]
-    L -- "No" --> N["Commit dopo il tuo ok"]
+    L -- "No" --> N["Status: resolved e commit con il tuo ok"]
     M --> N
 ```
 
 ## Chi fa cosa
 
-| Attività | Chi | Perché |
+| Attività | Chi | Modelli e motivo |
 |---|---|---|
-| Decidere, scrivere spec e ticket | Claude (Opus) | Un errore qui si scopre tardi |
-| Smontare i ticket prima del codice | Agente `contrarian` in Claude Code | Non ha visto il ragionamento che li ha prodotti |
-| Implementare un ticket | Gemini Flash o Argon, secondo la riga `Esecutore:` | Flash dove test e build mostrano l'errore, Argon dove passa inosservato |
-| Doppia Review e correzioni | Gemini, con 3 subagenti | Chi rivede parte da un contesto pulito |
-| Prova manuale, commit e merge | Tu | Le decisioni sul prodotto e il remoto restano tue |
+| Progettazione, grilling, spec, ticket | Progettista (Claude Team/Pro o AGY Ultra) | `Sonnet 5.5 medium` (default), `Opus` su scelte difficili o bug complessi, `Carbon Medium` in Ufficio |
+| Premortem dei ticket | Agente `contrarian` in Claude Code | `Sonnet high`, separato dal ragionamento di chi ha scritto i ticket |
+| Implementazione di un ticket | Esecutore in Antigravity | `Hydrogen Low` (`<= 30` righe meccaniche), `Hydrogen Medium` (default con test), `Carbon Medium` (Ultra) o `Argon Medium` (Pro) dove i test non vedono l'errore |
+| Review binaria e fix | Esecutore + 3 subagenti su `inherit` | `Review: quick` (`0` subagenti) su `0/0/0`; `Review: double` (`Standards`, `Spec`, `ponytail-review`) quando `S`, `G` o `C = 1` |
+| Branch, prova manuale, commit e merge | Tu | Creazione/cambio branch e merge su `main` sono bloccati agli agenti |
 
 ## Cosa bloccano gli hook
 
 ```mermaid
 flowchart TD
-    A["L'agente vuole eseguire un comando"] --> B["Hook PreToolUse"]
-    B --> C["Toglie VAR=valore, env, sudo; apre sh -c"]
-    C --> D{"È un comando git?"}
-    D -- "No" --> E["Passa"]
-    D -- "Sì" --> F{"È distruttivo o verso il remoto?"}
-    F -- "No" --> E
-    F -- "Sì" --> G["Bloccato: lo esegui tu"]
-    A --> H["Lettura di un file"]
-    H --> I{"È .env o un file di configurazione con segreti?"}
-    I -- "Sì" --> J["Bloccata"]
-    I -- "No" --> K["Passa"]
+    A["L'agente lancia un comando shell"] --> B["PreToolUse (block-dangerous-git)"]
+    B --> C["Apre wrapper sh/bash/pwsh/cmd /c e here-string"]
+    C --> D{"Git distruttivo, push, merge o cambio branch?"}
+    D -- "Sì" --> G["Bloccato: lo esegue l'utente"]
+    D -- "No" --> E{"Legge file privati di credenziali?"}
+    E -- "Sì" --> G
+    E -- "No" --> F["Passa"]
+    A2["Lettura o ricerca file (AGY)"] --> H["PreToolUse (block-secrets-read)"]
+    H --> I{"File con segreti o jsonl oltre 100 KB senza range corto?"}
+    I -- "Sì" --> G
+    I -- "No" --> F
 ```
 
-Claude Code usa `hooks/claude/block-dangerous-git.py`. Antigravity usa i due script in `hooks/antigravity/`. `tests/run.py` prova gli stessi casi su entrambi.
+Claude Code usa `hooks/claude/block-dangerous-git.py`; Antigravity usa `hooks/antigravity/block-dangerous-git.js` e `hooks/antigravity/block-secrets-read.js`. Gli hook Git (`pre-commit`, `commit-msg`, `post-merge`, `post-checkout`, `post-rewrite`) verificano test, budget, anti-leak, formato dei commit e riallineano Antigravity dopo operazioni Git.
 
-## Come arriva il setup agli agenti
+## Sync Claude-AGY e controllo silenzioso 8h / 24h
 
 ```mermaid
 flowchart TD
-    A["SETUP.md"] --> B{"Cosa chiedi?"}
-    B -- "Installa" --> C["Skill, plugin, regole e guardrail"]
-    B -- "Aggiorna" --> D["Mostra i cambiamenti, poi applica ciò che scegli"]
-    B -- "Cerca MCP" --> E["Profilo, ricerca, al massimo 5 proposte"]
-    C --> F["scripts/sync-from-claude.py"]
-    D --> F
-    F --> G["~/.gemini/config/rules"]
-    F --> H["~/.gemini/config/agents e skills.json"]
-    F --> I["--check: segnala le differenze e non cancella nulla"]
+    S["Avvio sessione (SessionStart)"] --> SC["scripts/session_check.py (cache-only, meno di 50 ms)"]
+    SC --> D{"Novità o timer 8h / 24h scaduti?"}
+    D -- "No" --> Z["Output vuoto, zero token"]
+    D -- "Novità presenti" --> N["Mostra avviso cross-PC o skill"]
+    D -- "Timer scaduti" --> BG["Spawn detached scripts/background_checker.py"]
+    BG --> LK["Lock kernel OS (msvcrt.locking / fcntl.flock)"]
+    LK --> G8["8h: git fetch --prune, status sporco + merge-tree cross-PC"]
+    LK --> G24["24h: git ls-remote HEAD sui repo di .skill-lock.json"]
+    G8 --> US["Aggiorna ~/.just-develop-local/update-state.json"]
+    G24 --> US
+    PM["git pull / checkout / rebase"] --> SY["hooks/git/post-* lancia sync-from-claude.py"]
+    SY --> AGY["Scrive atomicamente rules, agents e skills.json in ~/.gemini/config/"]
 ```
 
-## I file
+Per forzare subito il controllo di rete senza attendere il turno successivo esegui `python -X utf8 -I scripts/check-updates.py`.
+
+## Catalogo completo dei file (`just-develop`)
 
 | File | A cosa serve |
 |---|---|
-| `SETUP.md` | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
-| `SETUP-REPO.md` | Analisi stile retro di un repo e suo allineamento |
-| `flow.md`, `flow-prompts.md` | Il flusso di lavoro, il contrarian, la review e il Walkthrough |
-| `GUIDE.md`, `GLOSSARY.md` | Manuale rapido e significato dei termini |
-| `DECISIONS.md` | Ogni scelta con pro, contro e fonti |
-| `shared/global.md`, `personal/global.md` | Regole globali |
-| `agents/` | L'agente `contrarian`, che fa il premortem dei ticket |
-| `skills/` | Skill del setup: `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
-| `hooks/` | Blocchi su git distruttivo e sulla lettura dei segreti, e controllo pre-commit |
-| `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |
-| `tests/run.py` | Prova hook e sincronizzazione |
-| `mcp.json` | Fonte unica dei server MCP |
-| `docs/agents/` | Ticket, etichette e dominio per gli agenti |
+| `.claude/settings.json` | Configurazione di progetto Claude (`attribution` vuota, niente `Co-Authored-By`) |
+| `.gitattributes` | Impone fine riga `LF` su `hooks/git/*` e `*.sh` anche su Windows con `core.autocrlf` |
+| `.gitignore` | Esclusioni locali di Git |
+| `AGENTS.md`, `CLAUDE.md` | Regole di questo repo, aree a rischio e comandi di verifica (`CLAUDE.md` importa `@AGENTS.md`) |
+| `SETUP.md` | Istruzioni per l'agente: installazione, aggiornamento e ricerca MCP |
+| `SETUP-REPO.md` | Analisi e allineamento di progetti `Repo versionato` o `Repo ibrido` |
+| `flow.md` | Nucleo always-on (`<= 3.000 B`): ruoli, modelli, branching, puntatori e checklist chiusura ticket |
+| `GUIDE.md`, `GLOSSARY.md` | Manuale operativo rapido e vocabolario dei ruoli e termini |
+| `DECISIONS.md` | Registro datato delle decisioni prese, superate e fonti |
+| `README.md` | Panoramica iniziale del repository |
+| `shared/global.md`, `personal/global.md` | Regole globali condivise (inclusa regola segreti) e preferenze personali |
+| `agents/contrarian.md` | Agente di premortem sui ticket in Claude Code (`antigravity: false`) |
+| `skills/flow-design/SKILL.md` | Skill universale di progettazione (`Entry Router`, `aim-higher`, grilling, spec/ticket `S/G/C`, `contrarian`, tabella) |
+| `skills/implement-ticket/SKILL.md` | Skill universale di implementazione (`Pre-flight`, edit mirati, `docs/`, review `quick` o `double` a 3 subagenti, `Answer`, Walkthrough, commit) |
+| `skills/aim-higher/SKILL.md` | Ricerca su codice, documentazione ufficiale e web per principio, causa e 2-3 opzioni |
+| `skills/junior-deep-docs/SKILL.md` | Metodo in 6 domande per documentare i moduli in `docs/` |
+| `skills/ui-ux-doctrine/SKILL.md` | Regole di usabilità e accessibilità (Nielsen, WCAG 2.2 AA, 4 stati UI) |
+| `hooks/claude/block-dangerous-git.py` | Guardrail Claude Code: git distruttivo, creazione/cambio branch, bypass `cmd /c` e lettura segreti shell |
+| `hooks/antigravity/block-dangerous-git.js` | Guardrail Antigravity comandi shell: git distruttivo, branch e wrapper shell |
+| `hooks/antigravity/block-secrets-read.js` | Guardrail Antigravity file/shell: segreti, filtri PowerShell sicuri e blocco `*.jsonl > 100 KB` senza range `<= 100` |
+| `hooks/git/pre-commit` | Esegue `python -X utf8 -I tests/run.py` prima di ogni commit e controlla il formato branch (non bloccante su `HEAD` staccata) |
+| `hooks/git/commit-msg` | Impone `tipo(ambito): descrizione` in max 15 parole senza `Co-Authored-By`, accettando merge/revert automatici Git/GitHub |
+| `hooks/git/post-merge` | Riallinea `~/.gemini/config/` con `sync-from-claude.py` e azzera lo stato `behind` dopo `pull`/`merge` |
+| `hooks/git/post-checkout` | Riallinea `~/.gemini/config/` al cambio branch (saltando checkout di singoli file, `--orphan` e rebase/bisect) |
+| `hooks/git/post-rewrite` | Riallinea `~/.gemini/config/` e azzera `behind` dopo `rebase` |
+| `scripts/sync-from-claude.py` | Sincronizza atomicamente regole, agenti e `skills.json` verso Antigravity e verifica MCP/guardrail (`--check`) |
+| `scripts/session_check.py` | Hook `SessionStart` (`< 50 ms`, zero rete) che mostra novità e lancia il checker in background |
+| `scripts/background_checker.py` | Worker staccato con lock kernel OS per il controllo 8h Git cross-PC e 24h `git ls-remote` skill/plugin |
+| `scripts/check-updates.py` | Esegue in modo sincrono e interattivo lo stesso controllo aggiornamenti di `background_checker.py` |
+| `tests/run.py` | Suite di test automatica su guardrail, `commit-msg`, sync, pipe/lock safety, budget token, anti-leak e `docs/` |
+| `mcp.json` | Elenco condiviso dei server MCP generici |
+| `docs/docs.json`, `docs/SUMMARY.md` | Configurazione navigazione Mintlify e indice GitBook |
+| `docs/index.mdx`, `docs/skills.md` | Mappa del setup con catalogo file e guida completa alle skill |
+| `docs/banner.png`, `docs/social-preview.png` | Asset grafici del repository e della documentazione |
+| `docs/agents/domain.md`, `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md` | Regole di dominio, issue tracker locale `.scratch/` ed etichette triage per gli agenti |
