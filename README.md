@@ -2,7 +2,9 @@
 
 # just-develop
 
-Il mio setup di sviluppo con agenti: Claude Code decide e scrive i ticket, Gemini in Antigravity li implementa e li rivede.
+Setup pubblico di sviluppo con agenti per Claude Code e Antigravity: progettazione guidata su disco (`.scratch/`), implementazione isolata per ticket, review binaria (`quick` o `double`) e documentazione in `docs/`.
+
+Per scegliere subito quale skill usare a ogni passo, apri la [guida alle skill](docs/skills.md). Per i comandi quotidiani vedi [`GUIDE.md`](GUIDE.md).
 
 ## Iniziare
 
@@ -19,18 +21,17 @@ Lo stesso file copre anche `Aggiorna il setup` e `Cerca MCP utili per me`.
 | File | A cosa serve |
 |---|---|
 | [`SETUP.md`](SETUP.md) | Istruzioni per l'agente: installazione, aggiornamenti, ricerca MCP |
-| [`SETUP-REPO.md`](SETUP-REPO.md) | Analizza come lavorano gli agenti su un repo e lo allinea |
-| [`flow.md`](flow.md) | Il flusso di lavoro, sempre attivo |
-| [`flow-prompts.md`](flow-prompts.md) | Review, documentazione, Walkthrough, retro, contrarian |
-| [`GUIDE.md`](GUIDE.md) | Manuale rapido per te |
-| [`GLOSSARY.md`](GLOSSARY.md) | I termini del flusso |
-| [`DECISIONS.md`](DECISIONS.md) | Cosa è entrato nel setup, perché e da quali fonti |
-| [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) | Regole di questo repo per gli agenti |
-| [`docs/`](docs/index.mdx) | Mappa del setup con i diagrammi; `docs/agents/` descrive ticket, etichette e dominio |
-| [`shared/`](shared/global.md), [`personal/`](personal/global.md) | Regole globali |
-| `agents/` | L'agente `contrarian`, che fa il premortem dei ticket |
-| `skills/` | Skill del setup: `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
-| `hooks/` | Blocchi su git distruttivo e lettura dei segreti |
-| `scripts/sync-from-claude.py` | Allinea Antigravity a Claude Code |
-| `tests/run.py` | Controllo di hook e sincronizzazione |
-| `mcp.json` | Fonte unica dei server MCP |
+| [`SETUP-REPO.md`](SETUP-REPO.md) | Analizza e allinea un progetto (`Repo versionato` o `Repo ibrido`) |
+| [`flow.md`](flow.md) | Nucleo sempre attivo: ruoli, modelli, branching, puntatori e chiusura ticket |
+| [`GUIDE.md`](GUIDE.md) | Manuale rapido: prompt, modelli Casa/Ufficio, branching e review |
+| [`GLOSSARY.md`](GLOSSARY.md) | Vocabolario del flusso e dei ruoli |
+| [`DECISIONS.md`](DECISIONS.md) | Decisioni architetturali con pro, contro, fonti e sostituzioni |
+| [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) | Regole di questo repo e comandi di verifica |
+| [`docs/`](docs/index.mdx) | Mappa del setup ([`docs/skills.md`](docs/skills.md) per le skill, `docs/agents/` per tracker e dominio) |
+| [`shared/`](shared/global.md), [`personal/`](personal/global.md) | Regole globali condivise e personali |
+| `agents/` | Agente `contrarian` per il premortem sui ticket in Claude Code |
+| `skills/` | 5 skill del setup: `flow-design`, `implement-ticket`, `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine` |
+| `hooks/` | Guardrail Claude/AGY (git distruttivo, creazione branch, segreti e `.jsonl > 100 KB`) e hook Git (`pre-commit`, `commit-msg`, `post-merge`, `post-checkout`, `post-rewrite`) |
+| `scripts/` | `sync-from-claude.py` (allineamento Claude↔AGY), `session_check.py` / `background_checker.py` (controllo silenzioso 8h/24h) e `check-updates.py` |
+| `tests/run.py` | Suite automatica di verifica (hook, sync, pipe/lock safety, budget, anti-leak, `docs/`) |
+| `mcp.json` | Elenco condiviso dei server MCP |

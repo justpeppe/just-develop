@@ -1,6 +1,6 @@
 # Decisioni
 
-Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026. Le due origini sono `agents-config-repo` (il 7z) e `agents-setup-repo`.
+Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 (origini: `agents-config-repo` e `agents-setup-repo`) e allineamento v2 del 16 novembre 2026.
 
 ## 1. Il 7z è l'ossatura
 
@@ -16,6 +16,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 ## 2. Via Delphi e i percorsi Windows
 
+`Superata da: 31 (16/11/2026)`
+
 **Scelta:** esclusi hook BOM, MCP Delphi, `update-mcp.bat`, errori `BUILD-*` e riferimenti aziendali. Il setup deve funzionare su Mac e Windows.
 
 **Perché:** il repo è personale e generico; quel materiale riguarda un contesto di lavoro specifico.
@@ -27,6 +29,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 **Fonti:** Scelta dell'utente, 8/11/2026; storico git del 7z, 8/11/2026.
 
 ## 3. Ticket senza percorsi né righe
+
+`Superata da: 32 (16/11/2026)`
 
 **Scelta:** il ticket descrive il comportamento e una verifica eseguibile. L'esecutore trova i punti cercando nel codice.
 
@@ -49,6 +53,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 ## 5. Doppia Review con 3 subagenti, commit alla fine
 
+`Superata da: 33 (16/11/2026)`
+
 **Scelta:** Standards e Spec con le istruzioni di `code-review`, più `ponytail-review`. Ricevono il diff dopo `git add -N -- . ':(exclude).scratch'`: `.scratch/` resta fuori così una spec in corso non entra nella review. Il commit arriva dopo review, correzioni ed eventuale prova.
 
 **Perché:** la skill `code-review` intera legge solo il già committato. I ticket piccoli usano `Review: quick`.
@@ -60,6 +66,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 **Fonti:** Scelta dell'utente, 8/11/2026; `code-review/SKILL.md` di Matt Pocock; [Git, gitglossary](https://git-scm.com/docs/gitglossary) per `exclude`; [Google, Subagents](https://antigravity.google/docs/subagents) per `invoke_subagent`, lette l'8/11/2026.
 
 ## 6. Un branch per spec, niente worktree
+
+`Superata da: 34 (16/11/2026)`
 
 **Scelta:** i ticket di una spec stanno sullo stesso branch, un ticket Gemini alla volta. Il merge lo fa l'utente. Il parallelo è Gemini che implementa mentre Claude progetta la spec successiva.
 
@@ -87,6 +95,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 **Fonti:** repo `mattpocock/skills` (solo `.claude-plugin/`, controllato l'8/11); migrazione del 7z del 19/10/2026; hook di `ponytail`.
 
 ## 9. Regola dei modelli senza prezzi
+
+`Superata da: 33 (16/11/2026)`
 
 **Scelta:** Flash quando l'errore si vede da test o build, Argon quando si scopre tardi. Prezzi e punteggi restano fuori dai file.
 
@@ -118,6 +128,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 ## 12. Aggiornamenti su richiesta
 
+`Superata da: 35 (16/11/2026)`
+
 **Scelta:** autoUpdate per i plugin Claude, e il ramo Aggiorna per tutto il resto, con report dei cambi prima di applicare.
 
 **Perché:** il controllo a ogni avvio del 7z era costato circa 500 righe e 3-8 secondi con falsi errori, ed era stato tolto.
@@ -144,6 +156,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 - `docs/prompting-guide.md` e `gemini-web/` di `agents-setup-repo`: l'Executor Prompt non serve più col passaggio su disco.
 
 ## 15. Ogni affermazione ha una fonte
+
+`Superata da: 30 (10/11/2026)`
 
 **Scelta:** ogni affermazione su strumenti, modelli o pratiche dice dove si legge: pagina ufficiale con data, autore con data, codice o comando eseguito. Bastano file e funzione. Ciò che manca di fonte è `non verificato`.
 
@@ -185,11 +199,13 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 ## 19. Impostazioni e blocchi mantenuti
 
-**Scelta:** restano `CLAUDE_CODE_SUBAGENT_MODEL=sonnet`, `autoCompactWindow`, i preset di Antigravity e il blocco dei file `.ini`.
+`Superata da: 36 (16/11/2026)`
+
+**Scelta:** restano `CLAUDE_CODE_SUBAGENT_MODEL=sonnet`, `autoCompactWindow`, i preset di Antigravity e il blocco dei file privati di configurazione e ambiente.
 
 | Pro | Contro |
 |---|---|
-| Già nella configurazione reale dell'utente; il blocco `.ini` protegge i segreti | `permissionPreset` e `autoExecutionPolicy` non hanno una chiave documentata |
+| Già nella configurazione reale dell'utente; il blocco sui file privati protegge i segreti | `permissionPreset` e `autoExecutionPolicy` non hanno una chiave documentata |
 
 **Fonti:** `install.sh` di `agents-setup-repo` e `config.json` reale, 8/11/2026; [Claude Code, Subagents](https://code.claude.com/docs/en/sub-agents): la variabile è un default, quindi un modello indicato per il subagente, come Haiku, ha la precedenza; [Claude Code, Settings reference](https://code.claude.com/docs/en/settings-reference); [Google, Settings](https://antigravity.google/docs/settings/) documenta solo `enableTerminalSandbox`. Gli altri due sono `non verificati`.
 
@@ -296,6 +312,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 
 ## 29. Un contrarian smonta i ticket prima del codice
 
+`Superata da: 32 (16/11/2026), ora si salta quando c'è un solo ticket o tutti sono Review: quick.`
+
 **Scelta:** alla fine di `/to-tickets`, prima della tabella di consegna, Opus lancia l'agente `contrarian` (`agents/contrarian.md`): un subagente a contesto pulito che fa il premortem dei ticket, cioè immagina che siano già falliti e cerca perché. Ha tutti gli strumenti: cerca nel codice, sul web, nella documentazione e nei server MCP, e può scrivere ed eseguire script di verifica nella sua cartella `.scratch/<lavoro>/contrarian/`. Ogni obiezione cita una prova riapribile. Opus confronta `git status --short` e le impronte dei file di spec e ticket prima e dopo, per vedere che siano intatti, ricontrolla le prove, scarta quelle smentite e segna `non verificato` quelle che non riesce a controllare; l'utente sceglie cosa cambiare. Modello, livello e quando si salta li dice il file dell'agente. Sulla macchina `~/.claude/agents/just-develop` è un link a `REPO/agents`. L'agente esiste solo in Claude Code: il campo `antigravity: false` dice a `sync-from-claude.py` di non copiarlo, perché `gemini_agent()` darebbe alla copia solo strumenti di lettura e `search_web`, e `/to-tickets` si fa comunque con Opus in Claude Code.
 
 **Perché:** prima esisteva solo come riga nella guida ai modelli di `flow.md`, senza un momento né un formato. Chi ha scritto spec e ticket non vede i propri buchi. Che un errore trovato nei ticket costi meno di uno trovato in implementazione è `non verificato` per questo flusso. Limitare gli strumenti gli avrebbe tolto i server MCP e la possibilità di provare un'affermazione con un calcolo: la scelta dell'utente è dargli tutto e controllare dopo, invece di impedire prima.
@@ -322,3 +340,87 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026.
 | Come prima, si cita un nome e non un numero di riga, che invecchia prima | Un titolo di sezione non è un simbolo per il protocollo LSP: lo aggiungiamo noi |
 
 **Fonti:** scelta dell'utente, 10/11/2026; [Microsoft, Language Server Protocol Specification 3.17](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/), enumerazione `SymbolKind` (File, Module, Class, Method, Function, Constant, Key e altri, 26 in tutto), letta il 10/11/2026. Nessuna misura.
+
+## 31. Separazione netta tra `just-develop` pubblico e repo locale di stack (`delphi`)
+
+**Data:** 2026-11-16
+
+**Scelta:** `just-develop` resta pubblico e privo di regole o percorsi specifici di macchina; ogni stack locale (come il repository locale `delphi` sul PC Ufficio, privo di `remote`) vive in un repository fratello separato. `sync-from-claude.py` conserva le regole extra in `~/.gemini/config/rules/`, i server MCP locali extra (segnalandoli come `note:`) e gli agenti o knowledge locali.
+
+**Perché:** evita qualsiasi configurazione condizionale nel setup condiviso e azzera alla radice il rischio di pubblicare percorsi, macro o convenzioni specifiche di un contesto lavorativo.
+
+| Pro | Contro |
+|---|---|
+| Zero leak nel repo pubblico e zero `if` di profilo in `just-develop` | Due repository distinti da aggiornare quando cambia lo stack locale |
+
+**Fonti:** scelta dell'utente nell'allineamento v2 (`2026-11-16`), spec `.scratch/allineamento-v2/spec.md` e verifica su `scripts/sync-from-claude.py`.
+
+## 32. Nucleo `flow.md` sotto 3.000 B, due skill `dmi: false` (`flow-design`, `implement-ticket`) e addio `flow-prompts.md`
+
+**Data:** 2026-11-16
+
+**Scelta:** ridurre `flow.md` a un nucleo always-on (`<= 3.000 B`) con una checklist invariante di chiusura inline in 4 passi; spostare la progettazione in `skills/flow-design/SKILL.md` e l'esecuzione/review in `skills/implement-ticket/SKILL.md` (entrambe model-invoked con `disable-model-invocation` omesso); eliminare `flow-prompts.md`; passare nei ticket al riferimento per **file e simbolo** verificati eliminando `righe 1..N` da `junior-deep-docs`. `flow-design` contiene il contratto nativo di spec e ticket senza leggere `to-spec` o `to-tickets` e coordina i `SKILL.md` canonici via `Read`/`read_file` anziché chiamare il tool `Skill` esclusivo di Claude.
+
+**Perché:** riduce il contesto caricato a ogni turno da ~17 KB a ~2,5 KB, evita il fallimento di `grill-with-docs` in Antigravity (dove il tool `Skill` non esiste), evita conflitti con i template senza header `Review:`/`Esecutore:` di `to-tickets`, e protegge il ciclo di chiusura anche se l'esecutore salta l'apertura della skill esterna.
+
+| Pro | Contro |
+|---|---|
+| Taglio netto del contesto fisso su ogni turno e stesso flusso tra Claude e Antigravity | Le 2 skill vanno collegate via junction in `~/.agents/skills/` durante il setup |
+
+**Fonti:** audit `/writing-for-agents` (`SKILL.md`, `SKILL-MECHANICS.md`) e spec `.scratch/allineamento-v2/spec.md` (`2026-11-16`).
+
+## 33. Modelli Pro/Ultra reali e Review binaria `quick` | `double` con 3 subagenti `inherit`
+
+**Data:** 2026-11-16
+
+**Scelta:** abbandonare `3.8 Flash` e scartare la fascia intermedia `Review: single`. Gli esecutori usano `Hydrogen Low` (ritocchi meccanici `<= 30` righe senza nuovo stato), `Hydrogen Medium` (default quando compilatore e test catturano gli errori), `Carbon Medium` (Ufficio/AGY Ultra) o `Argon Medium` (Casa/AGY Pro) per `C = 1` o errori invisibili ai test. La metrica `S/G/C` mappa in modo netto: `0/0/0` -> `Review: quick` (0 subagenti: auto-verifica + gate deterministico), qualsiasi bit `= 1` -> `Review: double` (sempre 3 subagenti paralleli su `inherit`: `Standards` con lettura obbligatoria di `AGENTS.md` e relative doc di stack, `Spec`, e `ponytail-review` 6 assi con checklist inline senza aprire i manuali estesi di `humanizer`/`mintlify`, passando `git diff` in sola lettura senza file temporanei `_review.diff`).
+
+**Perché:** `3.8 Flash` mostra tassi d'errore elevati sugli edit e converge al costo di `Hydrogen`, mentre una review intermedia `single` degrada la qualità sui ticket con stato o verifica manuale; mantenere la checklist inline evita ~19.760 token per subagente.
+
+| Pro | Contro |
+|---|---|
+| Nessun compromesso qualitativo sui ticket non banali, zero costi LLM sui ritocchi `0/0/0` | `Review: double` lancia 3 subagenti sullo stesso modello del ticket |
+
+**Fonti:** override esplicito dell'utente (`2026-11-16`) registrato in `.scratch/allineamento-v2/spec.md` e `issues/03-flow-and-skills.md`.
+
+## 34. Branching a 3 livelli `office|home/<tipo>/<slug>`, guardrail `cmd /c` / branch / `*.jsonl` e fix `commit-msg`
+
+**Data:** 2026-11-16
+
+**Scelta:** usare solo branch effimeri minuscoli a 3 livelli (`office|home/<tipo>/<slug>`) creati e chiusi dall'utente su `main` con merge non-squash e `fetch.prune=true`; bloccare creazione/cambio branch e wrapper `cmd /c` / here-string PowerShell in `block-dangerous-git.py` e `block-dangerous-git.js`; allineare il blocco segreti shell su Claude Code; correggere i falsi positivi di `block-secrets-read.js` (filtri negativi PowerShell, virgole attorno a `.example`, commenti `#`, `Select-String` su sorgenti) aggiungendo il blocco alle letture integrali di `*.jsonl > 100 KB` senza range `<= 100` righe; spostare in `hooks/git/commit-msg` la whitelist dei prefissi automatici Git/GitHub (`Merge branch/branches/pull request/remote-tracking branch/tag`, `Revert "`) prima del controllo 1-riga tenendo `merge:` sotto il vincolo 1-riga; rendere non bloccante il controllo nome branch in `hooks/git/pre-commit` su detached `HEAD`.
+
+**Perché:** i branch a 2 livelli producono conflitti Directory/File e `core.ignorecase` su Windows/macOS sovrascrive branch con maiuscole diverse; i precedenti hook lasciavano passare `cmd /c`, fallivano su `Select-String`/PowerShell e su `Revert`/PR multi-riga reali.
+
+| Pro | Contro |
+|---|---|
+| Zero conflitti D/F e bypass shell chiusi su entrambi i client | L'utente apre e integra manualmente ogni branch |
+
+**Fonti:** spec `.scratch/allineamento-v2/spec.md` e test in `tests/run.py` (`2026-11-16`).
+
+## 35. Hook `post-*` e controllo silenzioso 8h/24h (`git ls-remote` + lock kernel)
+
+**Data:** 2026-11-16
+
+**Scelta:** aggiungere `hooks/git/post-merge`, `post-checkout` e `post-rewrite` per riallineare `~/.gemini/config/` via `sync-from-claude.py` (con scritture atomiche `os.replace`, pulizia delle sole junction rotte dentro `REPO/skills/*` e skip di `rules/claude-md.md` su `CLAUDE.md` solo `@import`). Introdurre `scripts/session_check.py` (hook `SessionStart` senza rete, `< 50 ms`, `additionalContext` filtrato sul workspace `just-develop` in Claude), `scripts/background_checker.py` (spawn staccato pipe-safe con `CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP` + `DEVNULL` e lock kernel esclusivo `msvcrt.locking`/`fcntl.flock`) e `scripts/check-updates.py` (controllo sincrono manuale). Ogni 8h verifica `git fetch --prune`, collisioni case-insensitive e sovrapposizioni cross-PC controllando `git status --porcelain -- ':(exclude).scratch'` prima di `git merge-tree --write-tree`; ogni 24h verifica aggiornamenti sui repository in `.skill-lock.json` tramite `git ls-remote <sourceUrl> HEAD` (senza REST API GitHub né confronto con `skillFolderHash`).
+
+**Perché:** evita i blocchi delle pipe `SessionStart` di Antigravity, elimina i falsi "nessun conflitto" di `merge-tree` sui file locali sporchi, evita le race di `os.kill` e non consuma i rate limit della REST API GitHub.
+
+| Pro | Contro |
+|---|---|
+| Avvio sessione istantaneo, rilevamento cross-PC e aggiornamenti skill in italiano | Lo spawn asincrono notifica al giro successivo salvo esecuzione manuale di `check-updates.py` |
+
+**Fonti:** spec `.scratch/allineamento-v2/spec.md` e premortem `.scratch/allineamento-v2/contrarian/premortem.md` (`2026-11-16`).
+
+## 36. Pulizia configurazione client: rimozione `autoCompactWindow`, `model: sonnet`, `ponytail` spento e segreti in `shared/global.md`
+
+**Data:** 2026-11-16
+
+**Scelta:** rimuovere `CLAUDE_CODE_AUTO_COMPACT_WINDOW=400000` (sostituito da sessioni pulite con stato su `.scratch/`), fissare `"model": "sonnet"` in `~/.claude/settings.json`, disattivare `ponytail` anche in `~/.gemini/config/config.json` (`plugins.ponytail.enabled = false`), aggiungere `"Bash(agy *)"` e `"PowerShell(agy *)"` a `permissions.deny`, e sostituire `no-ini-files.md` con una regola positiva in `shared/global.md`.
+
+**Perché:** evita switch di modello a metà sessione che invalidano la cache, risparmia i token fissi di `ponytail` runtime e mantiene i blocchi critici lato client senza appesantire le regole globali di Antigravity.
+
+| Pro | Contro |
+|---|---|
+| Meno carico statico su entrambi i client e cache più stabile | Per usare `/ponytail-audit` o `/ponytail-debt` occorre riabilitare manualmente il plugin |
+
+**Fonti:** spec `.scratch/allineamento-v2/spec.md` e premortem `.scratch/allineamento-v2/contrarian/premortem.md` (`2026-11-16`).

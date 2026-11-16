@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Mappa del setup](index.mdx)
+* [Guida alle skill](skills.md)
 
 ## Riferimento
 

@@ -1,0 +1,2 @@
+hooks/git/* text eol=lf
+*.sh text eol=lf

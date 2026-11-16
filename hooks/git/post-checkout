@@ -1,0 +1,27 @@
+#!/bin/sh
+# Post-checkout hook: mirror Claude config into Antigravity only on real branch switches outside rebase/bisect.
+[ "$3" = "1" ] || exit 0
+[ "$1" != "$2" ] || exit 0
+printf '%s\n' "$2" | grep -Eq '^0+$' && exit 0
+
+GIT_DIR_PATH=$(git rev-parse --git-dir 2>/dev/null || true)
+if [ -n "$GIT_DIR_PATH" ]; then
+  if [ -d "$GIT_DIR_PATH/rebase-merge" ] || [ -d "$GIT_DIR_PATH/rebase-apply" ] || [ -f "$GIT_DIR_PATH/BISECT_LOG" ]; then
+    exit 0
+  fi
+fi
+
+PY=$(command -v python || command -v python3 || true)
+[ -n "$PY" ] || exit 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+TOP=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [ -n "$TOP" ] && [ -f "$TOP/scripts/sync-from-claude.py" ]; then
+  SCRIPTS="$TOP/scripts"
+else
+  SCRIPTS=$(cd "$SCRIPT_DIR/../../scripts" 2>/dev/null && pwd || true)
+fi
+[ -n "$SCRIPTS" ] && [ -f "$SCRIPTS/sync-from-claude.py" ] || exit 0
+
+"$PY" -X utf8 -I "$SCRIPTS/sync-from-claude.py" || true
+exit 0

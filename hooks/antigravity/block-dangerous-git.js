@@ -1,27 +1,44 @@
 const fs = require('fs');
-const path = require('path');
 
 const GIT_OPTIONS_WITH_ARG = new Set([
   '-c', '-C', '--git-dir', '--work-tree', '--namespace', '--super-prefix', '--exec-path', '--config-env'
 ]);
 const LAUNCHERS = new Set(['env', 'sudo', 'command', 'exec', 'nohup', 'time']);
-const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'pwsh', 'powershell']);
+const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'pwsh', 'powershell', 'cmd']);
 const ASSIGNMENT = /^[A-Za-z_]\w*=/;
-const SHELL_RUN_FLAG = /^-(?:[a-z]*c|command)$/i;
+const SHELL_RUN_FLAG = /^(?:-(?:[a-z]*c|command)|\/[ck](?:$|["']))/i;
 
-// A letter after the last dot keeps tags and release branches such as v1.2.0 out.
-const FILE_EXTENSION = /\.[a-zA-Z][a-zA-Z0-9]*$/;
+const BRANCH_MUTATING_FLAGS = new Set([
+  '-d', '-D', '-f', '-m', '-M', '-c', '-C', '-u',
+  '--delete', '--force', '--move', '--copy', '--set-upstream-to', '--unset-upstream', '--edit-description'
+]);
+const BRANCH_VALUE_FLAGS = new Set([
+  '--contains', '--no-contains', '--merged', '--no-merged', '--points-at',
+  '--sort', '--format', '--abbrev', '--color', '--column'
+]);
+const BRANCH_LIST_FLAGS = new Set(['-l', '--list']);
+const WORKTREE_BLOCKED_SUBS = new Set(['add', 'remove', 'prune', 'move', 'lock', 'unlock', 'repair']);
 
 const HEREDOC = /<<-?\s*['"]?(\w+)['"]?([^\n]*)\n[\s\S]*?\n\1[ \t]*(?=\n|$)/g;
+const PS_HERE_SQ = /@'[ \t]*\r?\n(?:[\s\S]*?\r?\n)?[ \t]*'@/g;
+const PS_HERE_DQ = /@"[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?[ \t]*"@/g;
 const LEX_TOKEN = /\\.|"(?:\\.|[^"\\])*"|'[^']*'|(?:^|(?<=[\s;&|()]))#[^\r\n]*/g;
 const BACKTICK_SUB = /`([^`\r\n]*\S+\s+\S+[^`\r\n]*)`/g;
 const DQUOTE_SUB = /\$\(([^)\r\n]+)\)|`([^`\r\n]*\S+\s+\S+[^`\r\n]*)`/g;
 const WORD_TOKEN = /(?:\\.|"(?:\\.|[^"\\])*"|'[^']*'|\S)+/g;
 
 function sanitizeForSplit(cmd) {
-  const noHeredoc = cmd.replace(HEREDOC, (_, tag, rest) => '<<' + tag + rest);
   const extra = [];
-  const lexed = noHeredoc.replace(LEX_TOKEN, (m) => {
+  let pre = cmd.replace(HEREDOC, (_, tag, rest) => '<<' + tag + rest);
+  pre = pre.replace(PS_HERE_SQ, "@''@");
+  pre = pre.replace(PS_HERE_DQ, (_, body) => {
+    for (const sub of (body || '').matchAll(DQUOTE_SUB)) {
+      extra.push((sub[1] || sub[2]).replace(/\\"/g, '"'));
+    }
+    return '@""@';
+  });
+
+  const lexed = pre.replace(LEX_TOKEN, (m) => {
     if (m[0] === '#') return '';
     if (m[0] === "'") return m.replace(/[\r\n;&|()`]/g, ' ');
     if (m[0] === '"') {
@@ -35,6 +52,11 @@ function sanitizeForSplit(cmd) {
   let cleaned = lexed.replace(BACKTICK_SUB, (_, inner) => ' ; ' + inner + ' ; ');
   if (lexed.includes('`')) cleaned += ' ; ' + lexed.replace(/`\r?\n/g, ' ').replace(/`/g, '');
   return cleaned + extra.map((e) => ' ; ' + e).join('');
+}
+
+function isGitCommand(word) {
+  const base = word.split(/[\\/]/).pop().replace(/`/g, '').toLowerCase().replace(/\.exe$/, '');
+  return base === 'git';
 }
 
 function extractGitSubcommand(args) {
@@ -53,37 +75,49 @@ function extractGitSubcommand(args) {
   return { sub: '', subArgs: [] };
 }
 
-function namesAPath(arg, cwd) {
-  if (arg.startsWith('-')) return false;
-  return FILE_EXTENSION.test(arg) || fs.existsSync(path.resolve(cwd || '.', arg));
+function isBranchMutating(subArgs) {
+  if (!subArgs.length) return false;
+  let hasList = false;
+  const positional = [];
+  let i = 0;
+  while (i < subArgs.length) {
+    const a = subArgs[i];
+    if (BRANCH_MUTATING_FLAGS.has(a) || [...BRANCH_MUTATING_FLAGS].some((f) => a.startsWith(f + '='))) {
+      return true;
+    }
+    if (/^-[a-zA-Z]*[dDfMmCc]/.test(a)) return true;
+    if (BRANCH_LIST_FLAGS.has(a)) { hasList = true; i += 1; continue; }
+    if (BRANCH_VALUE_FLAGS.has(a)) { i += 2; continue; }
+    if (a.startsWith('-')) { i += 1; continue; }
+    positional.push(a);
+    i += 1;
+  }
+  return positional.length > 0 && !hasList;
 }
 
-function dangerousGitRule({ sub, subArgs }, cwd) {
+function dangerousGitRule({ sub, subArgs }) {
   if (sub === 'push') return 'git push';
   if (sub === 'merge') return 'git merge';
   if (sub === 'reset' && subArgs.some((a) => a === '--hard' || a === '-hard')) return 'git reset --hard';
   if (sub === 'clean' && subArgs.some((a) => a === '--force' || /^-[a-z]*f/i.test(a))) return 'git clean -f';
-  if (sub === 'branch' && subArgs.some((a) => a === '--force' || /^-[a-zA-Z]*[DfMC]/.test(a))) return 'git branch -D';
+  if (sub === 'branch' && isBranchMutating(subArgs)) return 'git branch create/delete/move';
 
-  // Checkout of a branch is allowed; checkout of files rewrites the working tree without a trace.
   if (sub === 'checkout') {
-    const forced = subArgs.some((a) =>
-      a === '.' || a === '--' || a === '-f' || a === '--force' || /^-[a-zA-Z]*B/.test(a) ||
-      a.startsWith('./') || a.startsWith('.\\')
-    );
-
-    // shortcut: `git -C other checkout name` is checked against Cwd, resolve -C if it ever misses a file.
-    const createsBranch = subArgs.some((a) => a === '-b' || a === '--orphan');
-    if (forced || (!createsBranch && subArgs.some((a) => namesAPath(a, cwd)))) return 'git checkout';
+    const helpOnly = subArgs.length > 0 && subArgs.every((a) => a === '-h' || a === '--help');
+    if (!helpOnly) return 'git checkout';
+  }
+  if (sub === 'switch') {
+    const helpOnly = subArgs.length > 0 && subArgs.every((a) => a === '-h' || a === '--help');
+    if (!helpOnly) return 'git switch';
+  }
+  if (sub === 'worktree' && subArgs.some((a) => WORKTREE_BLOCKED_SUBS.has(a.toLowerCase()) || a === '-b' || a === '-B')) {
+    return 'git worktree mutate';
   }
 
   if (sub === 'restore') {
     const hasStaged = subArgs.some((a) => a === '--staged' || /^-[a-rt-zA-Z]*S/.test(a));
     const hasWorktree = subArgs.some((a) => a === '--worktree' || /^-[a-rt-zA-Z]*W/.test(a));
     if (!hasStaged || hasWorktree) return 'git restore';
-  }
-  if (sub === 'switch' && subArgs.some((a) => a === '-f' || a === '--force' || a === '--discard-changes')) {
-    return 'git switch --discard-changes';
   }
   if (sub === 'stash' && subArgs.some((a) => ['drop', 'clear', 'pop'].includes(a.toLowerCase()))) {
     return 'git stash drop/clear/pop';
@@ -92,7 +126,6 @@ function dangerousGitRule({ sub, subArgs }, cwd) {
 }
 
 function stripLaunchers(words) {
-  // shortcut: a launcher option with a separate value (sudo -u bob) stops here, parse each launcher if that shows up.
   let i = 0;
   while (i < words.length && (ASSIGNMENT.test(words[i]) || LAUNCHERS.has(words[i].toLowerCase()) || (i > 0 && words[i].startsWith('-')))) {
     i += 1;
@@ -100,22 +133,64 @@ function stripLaunchers(words) {
   return words.slice(i);
 }
 
-function matchDangerousCommand(command, cwd) {
+function stripOuterQuotes(s) {
+  if (s.length >= 2 && ((s[0] === '"' && s.endsWith('"')) || (s[0] === "'" && s.endsWith("'")))) {
+    return s.slice(1, -1);
+  }
+  return s;
+}
+
+function extractShellInnerTokens(rawRest) {
+  const chunks = [];
+  for (const rw of rawRest) {
+    const cleaned = rw.replace(/^\/[ck](?=$|["'])/i, '');
+    if (!cleaned) continue;
+    chunks.push(stripOuterQuotes(cleaned));
+  }
+  const joined = chunks.filter(Boolean).join(' ').replace(/(&&|\|\||[;|\r\n{}()])/g, ' $1 ');
+  const out = [];
+  for (const tok of joined.match(WORD_TOKEN) || []) {
+    if (['&&', '||', ';', '|', '(', ')', '{', '}'].includes(tok)) {
+      out.push(tok);
+      continue;
+    }
+    if (tok === '&') continue;
+    const cleaned = stripOuterQuotes(tok.replace(/^&+/, '').trim()).replace(/^["']+|["']+$/g, '');
+    if (cleaned) out.push(cleaned);
+  }
+  return out;
+}
+
+function matchDangerousCommand(command) {
   for (const part of sanitizeForSplit(command).split(/&&|\|\||[;&|\r\n()]/)) {
-    const rawWords = part.trim().match(WORD_TOKEN);
-    if (!rawWords) continue;
-    const words = stripLaunchers(rawWords.map((w) => w.replace(/^["']|["']$/g, '')).filter(Boolean));
+    const rawMatches = part.trim().match(WORD_TOKEN);
+    if (!rawMatches) continue;
+    const rawWords = rawMatches.filter((w) => w.replace(/^["']|["']$/g, '').length > 0);
+    const cleanedWords = rawWords.map((w) => w.replace(/^["']|["']$/g, ''));
+    const words = stripLaunchers(cleanedWords);
     if (!words.length) continue;
+    const rawRest = rawWords.slice((cleanedWords.length - words.length) + 1);
 
     const base = words[0].split(/[\\/]/).pop().replace(/`/g, '').toLowerCase().replace(/\.exe$/, '');
     const rest = words.slice(1);
 
-    // Separators inside the quoted script are already blanks here, so every git word is checked.
     if (SHELLS.has(base) && rest.some((w) => SHELL_RUN_FLAG.test(w))) {
-      const inner = rest.join(' ').split(/\s+/);
-      for (let i = 0; i < inner.length; i += 1) {
-        const hit = inner[i] === 'git' ? dangerousGitRule(extractGitSubcommand(inner.slice(i + 1)), cwd) : null;
-        if (hit) return hit;
+      const inner = extractShellInnerTokens(rawRest);
+      const segs = [];
+      let cur = [];
+      for (const tok of inner) {
+        if (['&&', '||', ';', '|', '(', ')', '{', '}'].includes(tok)) {
+          if (cur.length) { segs.push(cur); cur = []; }
+        } else {
+          cur.push(tok);
+        }
+      }
+      if (cur.length) segs.push(cur);
+      for (const seg of segs) {
+        for (let i = 0; i < seg.length; i += 1) {
+          const hit = isGitCommand(seg[i]) ? dangerousGitRule(extractGitSubcommand(seg.slice(i + 1))) : null;
+          if (hit) return hit;
+        }
       }
       continue;
     }
@@ -126,9 +201,9 @@ function matchDangerousCommand(command, cwd) {
     if (base === 'reset' && rest.some((a) => a === '--hard' || a === '-hard')) {
       return 'reset --hard';
     }
-    if (base !== 'git') continue;
+    if (!isGitCommand(words[0])) continue;
 
-    const hit = dangerousGitRule(extractGitSubcommand(rest), cwd);
+    const hit = dangerousGitRule(extractGitSubcommand(rest));
     if (hit) return hit;
   }
   return null;
@@ -148,29 +223,25 @@ try {
   }
 
   const payload = JSON.parse(input);
-
   const command = payload?.toolCall?.args?.CommandLine || payload?.tool_input?.command || '';
 
   if (!command) {
     respond('allow');
   }
 
-  const hit = matchDangerousCommand(command, payload?.toolCall?.args?.Cwd || '');
+  const hit = matchDangerousCommand(command);
 
-  // Proof that the host runs the hook; it keeps no command text, and a failed write must not change the decision.
-  // shortcut: the file only grows, one short line per command; rotate it if it ever gets large.
-  try {
-    fs.appendFileSync(__dirname + '/block-dangerous-git.log', new Date().toISOString() + ' ' + (hit || 'allow') + '\n');
-  } catch (logError) {
-    // The decision below does not depend on the log.
-  }
-
+  // Log only denied invocations (no command text) so secrets never land in the log file.
   if (hit) {
-    respond('deny', `BLOCKED: '${command}' matches dangerous git pattern '${hit}'. Do not look for another route: stop and ask the user.`);
+    try {
+      fs.appendFileSync(__dirname + '/block-dangerous-git.log', new Date().toISOString() + ' deny ' + hit + '\n');
+    } catch (logError) {
+      // The decision below does not depend on the log.
+    }
+    respond('deny', `BLOCKED: '${hit}' e' bloccato agli agenti (inclusi branch/push/merge/comandi distruttivi): lo esegue lo sviluppatore.`);
   }
 
   respond('allow');
 } catch (err) {
-  // Google's hooks page does not document what a crash does, so an unreadable payload is allowed as before.
   respond('allow');
 }

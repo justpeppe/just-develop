@@ -1,0 +1,21 @@
+#!/bin/sh
+# Post-rewrite hook: on rebase only, clear stale update state and mirror Claude config into Antigravity.
+[ "$1" = "rebase" ] || exit 0
+
+PY=$(command -v python || command -v python3 || true)
+[ -n "$PY" ] || exit 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+TOP=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [ -n "$TOP" ] && [ -f "$TOP/scripts/sync-from-claude.py" ]; then
+  SCRIPTS="$TOP/scripts"
+else
+  SCRIPTS=$(cd "$SCRIPT_DIR/../../scripts" 2>/dev/null && pwd || true)
+fi
+[ -n "$SCRIPTS" ] && [ -f "$SCRIPTS/sync-from-claude.py" ] || exit 0
+
+if [ -f "$SCRIPTS/session_check.py" ]; then
+  "$PY" -X utf8 -I "$SCRIPTS/session_check.py" --clear-git >/dev/null 2>&1 || true
+fi
+"$PY" -X utf8 -I "$SCRIPTS/sync-from-claude.py" || true
+exit 0

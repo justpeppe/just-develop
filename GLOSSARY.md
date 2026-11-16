@@ -1,141 +1,151 @@
 # Flusso di lavoro con gli agenti
 
-Il vocabolario del flusso descritto in `flow.md`: chi lavora, come si passa da una richiesta a un commit, come si controlla la qualità e come si capisce il codice. Scritto per essere letto da uno junior: ogni termine in una o due frasi semplici.
+Vocabolario dei ruoli, del ciclo ticket, della review binaria e degli strumenti di `just-develop`.
 
-## Language
-
-### Chi lavora
+## Chi lavora
 
 **Opus**:
-Il modello più forte (Opus 5.5 in Claude Code): fa da architetto insieme a te per grilling, wayfinder, spec, ticket, e diagnosi bug.
+Il modello Claude più capace (`Opus 5.5` su Claude Pro e Team), usato dal Progettista per decisioni difficili da invertire e `/diagnosing-bugs` complessi.
 
 **Sonnet**:
-Un modello veloce e preciso (Sonnet 5.5 in Claude Code), lanciato come subagente per le ricerche.
+Il modello predefinito in Claude Code (`Sonnet 5.5 medium`) per progettazione ordinaria e ricerche su documentazione e web (`Sonnet high` nei subagenti).
 
 **Haiku**:
-Il modello più piccolo di Claude, usato come subagente per cercare file o simboli nel codice.
+Il modello più piccolo di Claude, usato dai subagenti per cercare file e simboli nel codice.
+
+**Hydrogen**:
+Il modello veloce di Google (`Gemini 4 Hydrogen`) su Antigravity Pro e Ultra, usato come esecutore di default a livello `Low` (ritocchi meccanici `<= 30` righe) o `Medium` (quando compilatore e test catturano gli errori).
+
+**Carbon**:
+Il modello avanzato di Google (`Gemini 4 Carbon`) su Antigravity Ultra (Ufficio), usato per ticket critici (`C = 1`, errori invisibili ai test) e come Progettista alternativo in Antigravity.
 
 **Argon**:
-Il modello principale di Google (Gemini 4 Argon) dentro Antigravity Ultra che implementa i ticket e applica i fix.
+Il modello avanzato di Google (`Gemini 4 Argon`) su Antigravity Pro (Casa), usato per ticket critici (`C = 1`) dove Carbon non è disponibile.
 
 **Progettista**:
-Il ruolo di chi fa grilling, spec, ticket e diagnosi dei bug. Oggi è Opus in Claude Code; può farlo anche Gemini 4 Carbon in Antigravity.
+Il ruolo di chi esplora, fa grilling, scrive spec, ticket e diagnosi dei bug (`Sonnet 5.5` o `Opus` in Claude Code; `Carbon` su Antigravity Ultra).
 
 **Esecutore**:
-Il ruolo di chi implementa un ticket: Gemini Flash o Argon, secondo la riga `Esecutore:` del ticket.
+Il ruolo di chi implementa un ticket seguendo `implement-ticket`: `Hydrogen Low|Medium`, `Carbon Medium` (Ufficio/Ultra) o `Argon Medium` (Casa/Pro), secondo la riga `Esecutore:`.
 
 **Revisore**:
-Il ruolo di chi controlla il lavoro degli altri: i tre subagenti della Doppia Review e il contrarian.
+Il ruolo di chi verifica il lavoro di altri: i tre subagenti paralleli di `Review: double` (`Standards`, `Spec`, `ponytail-review` su `inherit`) e il `contrarian` sui ticket.
 
 **Antigravity**:
-L'IDE di Google dove lavori con Argon usando la quota del piano Ultra, separata da quella di Claude Code.
+L'IDE e app desktop di Google in cui esegui i ticket con `Hydrogen`, `Carbon` (Ultra) o `Argon` (Pro).
 
 **Subagente**:
-Un'altra istanza di AI lanciata dalla sessione principale per un compito specifico (come una review o l'esplorazione di più moduli), con il proprio contesto pulito.
+Un'altra istanza di AI lanciata con un contesto pulito per un compito mirato (ricerca ampia, `contrarian` o i tre assi di `Review: double`).
 
-**Livello**:
-Quanto a fondo ragiona il modello prima di rispondere (`medium` per il lavoro ordinario, `high` per decisioni architetturali, bug difficili e verifiche).
+**Livello di ragionamento**:
+Quanto a fondo ragiona il modello prima di rispondere (`Low`, `Medium`, `High` in Antigravity; `medium`, `high` in Claude Code).
 
-### Il percorso di un lavoro
+## Il percorso di un lavoro
 
 **Flusso**:
-L'insieme di passi in `flow.md` che porta un lavoro da un'idea a un commit: esplorazione, spec, ticket su disco, implementazione, Doppia Review, Walkthrough, prova manuale e commit.
+L'insieme di passi in `flow.md`, `flow-design` e `implement-ticket` che porta un'idea a un commit verificato.
 
 **Ingresso**:
-La regola con cui Opus sceglie da quale passo partire davanti a una richiesta nuova.
+La regola di `flow-design` con cui il Progettista sceglie da quale percorso partire davanti a una richiesta nuova.
 
 **Via**:
-La riga `Via: /<skill>, perché <segnale>` con cui Opus propone da dove partire, aspettando la tua conferma prima di procedere.
+La riga `Via: /<skill>, perché <segnale>. Correggimi se sbaglio.` con cui il Progettista propone il percorso iniziale.
 
 **Aim-higher**:
-Il passo iniziale in cui l'AI cerca fatti nel codice, nella documentazione ufficiale e sul web per spiegarti *principio e causa* e proporti le alternative migliori (incluso lo standard ufficiale) prima di progettare.
+La ricerca iniziale su codice, documentazione ufficiale e web per spiegare principio, causa e giudice esterno proponendo 2-3 opzioni (`(Consigliata)` prima).
 
 **Grilling**:
-Un'intervista a giri (`/grill-with-docs`) in cui l'AI ti fa le domande necessarie per sciogliere i dubbi progettuali, proponendo per ciascuna i pro, i contro e l'opzione consigliata.
+L'intervista a giri in cui l'AI scioglie ogni dubbio della frontiera decisionale prima di scrivere la spec.
 
 **Wayfinder**:
-Il modo di affrontare un lavoro grande o nebbioso (`/wayfinder`): costruisce una mappa delle decisioni e spacca il lavoro in ticket piccoli.
+La modalità per lavori grandi o nebbiosi (`/wayfinder`): costruisce una mappa delle decisioni in `.scratch/` e le risolve una per volta.
 
 **Spec**:
-Il documento (`spec.md` in `.scratch/`) che fissa cosa costruire e perché, scritto dopo il grilling.
+Il documento `.scratch/<lavoro>/spec.md` che fissa problema, soluzione, storie, seam di test e decisioni prima dei ticket.
 
 **Ticket**:
-Un pezzo di lavoro piccolo e autonomo salvato su disco in `.scratch/`, con un obiettivo chiaro e criteri di verifica.
-_Avoid_: task (`task` è solo uno dei valori del campo `Type`).
+Una fetta verticale piccola e autonoma salvata in `.scratch/<lavoro>/issues/<NN>-<slug>.md`, con file e simboli verificati, metrica `S/G/C`, `Review:`, `Esecutore:` e criteri di accettazione eseguibili.
+_Avoid_: task generico senza contratto.
+
+**Metrica S/G/C**:
+Tre bit binari (`0|1`) assegnati dal Progettista: `S` (Stato persistente o schema dati), `G` (Forza del Giudice: `0` se compilatore e test bastano, `1` se serve prova UI/audio/runtime), `C` (Concorrenza, sicurezza, hook o script sync). `0/0/0` seleziona `Review: quick`; qualsiasi bit `= 1` seleziona `Review: double`.
 
 **Nucleo**:
-La parte delle regole che ogni agente legge sempre, in ogni sessione: ruoli, lingua, fonti, il ciclo in breve e i commit. Il resto del flusso sta nelle skill e si apre solo quando serve.
+Il file compatto `flow.md` (`<= 3.000 B`) caricato a ogni turno con ruoli, modelli, lingua, branching, puntatori e checklist invariante di chiusura ticket.
 
 **Fondamenta**:
-Ciò che ogni repo deve avere prima del primo ticket: `AGENTS.md` con un comando dei test provato, `docs/` e le skill di Matt Pocock configurate. In un repo con una storia vengono dopo l'analisi e l'allineamento.
+La base che ogni repo riceve al setup (`SETUP-REPO.md`): `AGENTS.md` con comando dei test provato, aree a rischio, `docs/` e skill collegate.
 
 **Repo ibrido**:
-Un repo condiviso con colleghi in cui tutto il materiale degli agenti resta solo sulla tua macchina: regole, spec e ticket, skill e la guida `docs/`. Nel repo comune arrivano solo codice e test.
+Un repo condiviso con colleghi dove regole, spec, ticket, skill e `docs/` restano solo sulla tua macchina via `.git/info/exclude`; dopo il commit l'AI scrive nel ticket `Status: resolved` e `Commit: <hash>`.
 _Avoid_: repo misto.
 
 **Repo versionato**:
-Un repo in cui anche il materiale degli agenti è salvato in git, come questo.
+Un repo in cui anche il materiale degli agenti è tracciato da Git (come `just-develop`); `Status: resolved` e `## Answer` entrano nello stesso commit del ticket.
 
 **Contrarian**:
-L'agente di Claude Code che fa il premortem dei ticket: finiti i ticket e prima del codice, immagina che il lavoro sia già fallito e cerca perché, nel codice e in qualsiasi fonte. Ogni obiezione porta una prova che chiunque può riaprire; può anche scrivere ed eseguire script di verifica, nella sua cartella in `.scratch/`. Spec, ticket e codice li cambi tu.
+L'agente in Claude Code (`antigravity: false`) che esegue il premortem sui ticket prima dell'implementazione, portando solo obiezioni sostenute da una prova riapribile.
 
 **Premortem**:
-Immaginare che un progetto sia già fallito e cercare le cause prima di cominciare. Il metodo è di Gary Klein (Harvard Business Review, 2007), letto tramite fonti secondarie il 10/11/2026: vedi `DECISIONS.md`, decisione 29.
-
-**Type**:
-Il tipo di un ticket: `research`, `prototype`, `grilling` o `task` (`HITL` se fatto insieme a Opus, `AFK` se implementato da Argon).
+Immaginare che i ticket implementati alla lettera abbiano già prodotto un errore per trovarne le cause prima di scrivere codice (Gary Klein, 2007).
 
 **Triage**:
-Decidere cosa fare di una segnalazione scritta da altri (collega o cliente): chiarirla, trasformarla in ticket o scartarla.
+Valutare una segnalazione esterna o PR, verificarne la riproduzione e portarla a `ready-for-agent`, `ready-for-human`, `needs-info` o `wontfix`.
 
 **Implement**:
-Il passo in cui si scrive il codice di un ticket e lo si verifica con build o test reali.
+La fase governata da `skills/implement-ticket/SKILL.md`: pre-flight, modifiche mirate per file e simbolo, aggiornamento `docs/`, verifiche deterministiche, review binaria, `## Answer`, Walkthrough e commit.
 
-**Doppia Review**:
-Il controllo automatico di codice e documentazione fatto da tre subagenti indipendenti in parallelo: Standards e Spec con le istruzioni di `code-review`, più `ponytail-review` (bug logici, rischi sotto carico e codice inutile). Lo lancia Gemini da solo, a fine implementazione.
+**Review binaria (`quick` e `double`)**:
+Due sole fasce di review a fine implementazione: `Review: quick` (0 subagenti, sola auto-verifica e check deterministici per ticket `0/0/0`) e `Review: double` (3 subagenti paralleli a contesto pulito su `inherit`: `Standards`, `Spec` e `ponytail-review`).
 
 **Fix**:
-La correzione applicata autonomamente dall'AI al codice o alla documentazione dopo che la Doppia Review ha trovato problemi tecnici reali verificati.
+La correzione autonoma in una sola passata dei soli difetti reali e lacune `docs/` confermati sul codice dopo la review, seguita da ri-esecuzione di build e test.
 
 **Retro**:
-Una riflessione mirata (`/retro`) che si lancia solo quando qualcosa è andato storto o dopo aver risolto un bug vero, per capire quale controllo automatico o regola locale avrebbe evitato il problema.
+La riflessione guidata (`/retro`, lanciata solo dall'utente) dopo un errore o bug reale per trasformare la causa in un hook, test o regola di `AGENTS.md`.
 
-### Capire il codice e valutare la qualità
+**Branching a 3 livelli**:
+Convenzione `office|home/<tipo>/<slug>` tutta minuscola creata e integrata dall'utente con merge non-squash su `main` e cancellazione post-merge per lavorare tra due PC senza conflitti Git.
 
-**Guida del Codice (`docs/` con Mintlify + GitBook)**:
-La guida viva del repository servita da web con **Mintlify** (`docs/docs.json`, `docs/index.mdx`) e compatibile **GitBook** (`docs/SUMMARY.md`), scritta secondo la skill `junior-deep-docs`: cataloga i file in `docs/index.mdx` e spiega per ogni modulo i giri degli eventi (`flowchart TD`), le strutture di stato con unità di misura e thread, e ogni funzione/API/flag. Viene aggiornata a ogni ticket e arricchita dalle domande fatte in chat (*Query -> Wiki*).
+**Controllo silenzioso 8h/24h**:
+Meccanismo `SessionStart` non bloccante (`session_check.py` + worker detached `background_checker.py` con lock kernel OS) che controlla ogni 8 ore il repo Git (inclusi file sporchi locali e `merge-tree`) e ogni 24 ore i repository delle skill installate via `git ls-remote`.
+
+## Capire il codice e valutare la qualità
+
+**Guida del Codice (`docs/` Mintlify + GitBook)**:
+La documentazione in `docs/` (`docs.json`, `index.mdx`, `SUMMARY.md` e pagine di modulo), scritta secondo `junior-deep-docs`: cataloga i file tracciati e spiega catene di esecuzione, stato (con unità e thread), parametri e flag API.
 
 **Walkthrough**:
-La spiegazione strutturata in 5 sezioni che l'AI ti presenta a fine ticket prima della prova manuale: mostra cosa fa il programma, il diagramma verticale `flowchart TD` del giro degli eventi, la tabella delle API/Parametri/Flag usati, i passaggi centrali spiegati con la scheda SMIG e i passi A, B... per provarlo.
+Il riepilogo in 5 sezioni mostrato a fine ticket prima della prova manuale: effetto pratico, diagramma `flowchart TD`, tabella API/parametri/flag/unità, schede SMIG e prova HITL granulare.
 
 **SMIG**:
-I quattro punti con cui il Walkthrough ti spiega ogni metodo importante toccato dal ticket: **Dove siamo** (file e metodo), **Meccanismo** (cosa fa e quali variabili/tipi muove), **Perché è fatto così** (l'idea dietro) e **Occhio a / Gotcha** (la trappola o caso limite a cui fare attenzione).
+I quattro punti della scheda di ogni passaggio chiave nel Walkthrough: **Dove siamo** (file e simbolo), **Meccanismo** (stato e variabili mosse), **Perché è fatto così**, **Occhio a / Gotcha**.
 
 **Valutare criticamente**:
-L'abitudine di accompagnare ogni scelta progettuale o proposta con due pensieri basati sui fatti: uno **A favore** e uno **Contrario**.
+Accompagnare ogni vera scelta architetturale con **A favore**, **Contrario** e opzione **`(Consigliata)`** basata sui fatti.
 
 **Finding**:
-Un problema concreto segnalato durante la review, con l'indicazione del file e della gravità (`Must` = da correggere, `Should` = consigliato, `Nice` = rifinitura).
+Un rilievo verificato della review con file, simbolo e gravità (`Must fix`, `Should fix`, `Nice to have`).
 
 **Aree a rischio**:
-Le parti del progetto dove un errore costa caro; in questo repo gli hook di sicurezza e lo script di sincronizzazione.
+Le parti di un repo dove un errore spegne la sicurezza o rompe l'ambiente (in `just-develop`: `hooks/` e `scripts/`).
 
-### Strumenti e file di supporto
+## Strumenti e file di supporto
 
 **Skill**:
-Una scheda di istruzioni specializzate che l'agente carica quando serve (es. `ui-ux-doctrine`, `aim-higher`).
+Una scheda di istruzioni caricata solo quando serve (`flow-design`, `implement-ticket`, `aim-higher`, `junior-deep-docs`, `ui-ux-doctrine`).
 
 **Hook**:
-Uno script automatico che gira prima (`PreToolUse`) o dopo (`PostToolUse`) un comando dell'AI per garantire la sicurezza (blocco di `git push`/`merge` e lettura `.ini`/`.env`).
+Uno script automatico eseguito da Claude, Antigravity o Git prima o dopo un'azione (blocco `git push`/`merge`, creazione o cambio branch, file privati di configurazione e ambiente, letture integrali `*.jsonl > 100 KB`, formato commit e sync automatico).
 
 **MCP**:
-Il ponte che collega l'AI a strumenti esterni reali. L'elenco di questo setup è in `mcp.json`.
+Il ponte verso strumenti esterni configurato per macchina e condiviso (quando generico) in `mcp.json`.
 
 **`.scratch/`**:
-La cartella su disco dove vivono spec, ticket, `DECISIONS.md` e `NOTES.md`. Permette di aprire una sessione nuova e pulita tra una fase e l'altra senza perdere mai il filo del lavoro.
+La cartella su disco dove vivono spec, ticket e output del `contrarian`, permettendo di aprire sessioni pulite tra fasi e ticket.
 
 **`DECISIONS.md` e `NOTES.md`**:
-I due file dentro `.scratch/<lavoro>/` dove si annotano le decisioni prese e i concetti chiave emersi, sempre accompagnati dalla fonte (codice, messaggio dell'utente o documentazione). Le decisioni sul setup stesso stanno invece in `DECISIONS.md`, nella radice di questo repo.
+I file di traccia dentro `.scratch/<lavoro>/` per decisioni di progetto e note con fonti; `DECISIONS.md` alla radice registra invece le decisioni del setup stesso.
 
 **Fonte verificata**:
-Il posto preciso dove si legge un'affermazione: pagina ufficiale con data di lettura, autore con data, codice o comando eseguito. Ciò che non ce l'ha si scrive `non verificato`.
+Il riferimento esatto di un'affermazione (documento ufficiale con data, autore con data, codice per file e simbolo o comando eseguito); in assenza di verifica si scrive `non verificato`.

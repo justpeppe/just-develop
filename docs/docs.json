@@ -11,7 +11,7 @@
     "groups": [
       {
         "group": "Il setup",
-        "pages": ["index"]
+        "pages": ["index", "skills"]
       },
       {
         "group": "Riferimento",
