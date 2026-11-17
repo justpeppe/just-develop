@@ -73,9 +73,9 @@ Per ogni concetto che non conosce usa la sezione `Se parti da zero` di `GUIDE.md
    - Chiave di primo livello `attribution`: `{"commit": "", "pr": "", "sessionUrl": false}`.
    - Rimuovi hook Git di un setup precedente dopo conferma dell'utente.
 8. **Configura Antigravity** in `~/.gemini/config/hooks.json` e `config.json`:
-   - `git-guardrails` (`PreToolUse`, matcher `run_command`): `node "REPO/hooks/antigravity/block-dangerous-git.js"`.
-   - `secrets-guardrails` (`PreToolUse`, matcher `run_command|read_file|view_file|grep_search|list_dir|find_by_name|call_mcp_tool|mcp_.*|read_resource`): `node "REPO/hooks/antigravity/block-secrets-read.js"`.
-   - `just-develop-session-check` (`SessionStart`, `enabled: true`): comando portabile `python`/`python3` che esegue `"REPO/scripts/session_check.py" --client antigravity` (`timeout: 10`).
+   - `git-guardrails` (`PreToolUse`, matcher `run_command`): `node REPO/hooks/antigravity/block-dangerous-git.js` (senza virgolette, con `/`: Antigravity su Windows le passa a `node` come parte del percorso; `REPO` non deve contenere spazi).
+   - `secrets-guardrails` (`PreToolUse`, matcher `run_command|read_file|view_file|grep_search|list_dir|find_by_name|call_mcp_tool|mcp_.*|read_resource`): `node REPO/hooks/antigravity/block-secrets-read.js` (senza virgolette).
+   - `just-develop-session-check` (`SessionStart`, `enabled: true`): comando portabile `python`/`python3` che esegue `REPO/scripts/session_check.py --client antigravity` senza virgolette (`timeout: 10`). Dopo la scrittura esegui ogni comando `PreToolUse` di `hooks.json` con input `{}`: l'exit deve essere `0`.
    - In `~/.gemini/config/config.json` imposta `plugins.ponytail.enabled = false` e conserva `userSettings.permissionPreset = "AGENT_PERMISSION_PRESET_DEFAULT"`, `userSettings.enableTerminalSandbox = true` e `userSettings.autoExecutionPolicy = "CASCADE_COMMANDS_AUTO_EXECUTION_PROCEED_IN_SANDBOX"`.
 9. **Sincronizza Antigravity** con `PY -X utf8 -I "REPO/scripts/sync-from-claude.py"`. Scrive regole (`shared.md`, `personal.md`, `flow.md`, omettendo `claude-md.md` quando `CLAUDE.md` contiene solo `@import`), agenti e `skills.json`, rispettando regole, agenti e server MCP locali extra. *Fatto quando* esce `0`.
 10. **Verifica.**
