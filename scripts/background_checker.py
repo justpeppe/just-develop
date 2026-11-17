@@ -323,7 +323,7 @@ def find_sibling_overlaps(repo_root, remote_ref, dirty_paths, current_branch='')
         ref = line.strip()
         if not ref or ref == upstream_ref or ref == self_remote_ref or ref == remote_ref:
             continue
-        if not ref.lower().startswith(('origin/home/', 'origin/office/')):
+        if not ref.lower().startswith(('origin/feat/', 'origin/fix/', 'origin/refactor/', 'origin/docs/', 'origin/test/', 'origin/chore/')):
             continue
         anc = run_git(['merge-base', '--is-ancestor', ref, remote_ref], cwd=repo_root, timeout=5)
         if anc.returncode == 0:

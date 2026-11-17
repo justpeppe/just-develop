@@ -1,5 +1,5 @@
 """Mirror the Claude Code setup into Antigravity; --check writes nothing, prints each difference and exits 1 if any."""
-import json, os, re, shutil, sys, tempfile
+import json, os, re, shlex, shutil, sys, tempfile
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 from os.path import join
@@ -259,6 +259,26 @@ for rule in sorted({'Bash(git push *)', 'Bash(git merge *)', 'PowerShell(git pus
                     f'Read(//**/*{INI})', f'Read(//**/{ENV})'} - claude_deny):
     diff.append(f'Claude permissions.deny: missing {rule}')
 
+def check_hook_command(cmd, script_name, allow_quotes=True):
+    """Validate hook command quoting on Windows and verify the referenced script exists on disk."""
+    try:
+        tokens = shlex.split(cmd, posix=False)
+    except ValueError as exc:
+        return f'invalid command quoting ({exc}): {cmd}'
+    matches = [t for t in tokens if script_name in t]
+    if not matches:
+        return f'missing {script_name} token in command: {cmd}'
+    raw_tok = matches[0]
+    is_quoted = len(raw_tok) >= 2 and raw_tok[0] == raw_tok[-1] and raw_tok[0] in ('"', "'")
+    if os.name == 'nt' and not allow_quotes and is_quoted:
+        return f'must not quote script path on Windows: {raw_tok}'
+    path = raw_tok[1:-1] if is_quoted else raw_tok
+    path = os.path.expanduser(os.path.expandvars(path))
+    if not os.path.isfile(path):
+        return f'script path not found on disk: {path}'
+    return None
+
+
 claude_hooks = claude_settings.get('hooks') if isinstance(claude_settings.get('hooks'), dict) else {}
 claude_script, claude_matchers = 'block-dangerous-git.py', {'Bash', 'PowerShell'}
 found = [(g.get('matcher') or '', h) for g in (claude_hooks.get('PreToolUse') or []) if isinstance(g, dict)
@@ -271,6 +291,10 @@ else:
         diff.append(f'Claude hooks.PreToolUse {claude_script}: missing matcher {sorted(claude_matchers - tokens)}')
     if any(h.get('onFailure') != 'block' for _, h in found):
         diff.append(f'Claude hooks.PreToolUse {claude_script}: missing onFailure=block')
+    for _, h in found:
+        cmd_err = check_hook_command(h.get('command') or '', claude_script, allow_quotes=True)
+        if cmd_err:
+            diff.append(f'Claude hooks.PreToolUse {claude_script}: {cmd_err}')
 
 gemini_hooks_file = join(GEMINI, 'hooks.json')
 gemini_hooks = read_json_doc(gemini_hooks_file)
@@ -283,13 +307,17 @@ for script, required in [
     ('block-secrets-read.js', {'run_command', 'read_file', 'view_file', 'grep_search', 'list_dir',
                                'find_by_name', 'call_mcp_tool', 'mcp_.*', 'read_resource'}),
 ]:
-    found_matchers = [m for m, h in active_hooks('PreToolUse') if script in (h.get('command') or '')]
-    if not found_matchers:
+    found_hooks = [(m, h) for m, h in active_hooks('PreToolUse') if script in (h.get('command') or '')]
+    if not found_hooks:
         diff.append(f'Antigravity hooks.json: missing {script}')
         continue
-    tokens = {t.strip() for m in found_matchers for t in m.split('|') if t.strip()}
+    tokens = {t.strip() for m, _ in found_hooks for t in m.split('|') if t.strip()}
     if '*' not in tokens and not required <= tokens:
         diff.append(f'Antigravity hooks.json {script}: missing matcher {sorted(required - tokens)}')
+    for _, h in found_hooks:
+        cmd_err = check_hook_command(h.get('command') or '', script, allow_quotes=False)
+        if cmd_err:
+            diff.append(f'Antigravity hooks.json {script}: {cmd_err}')
 
 enabled_plugins = claude_settings.get('enabledPlugins')
 if isinstance(enabled_plugins, dict) and enabled_plugins.get('ponytail@ponytail') is True:

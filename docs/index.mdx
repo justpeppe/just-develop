@@ -10,16 +10,17 @@ keywords: ["setup", "flow", "hooks", "sync", "review", "skills"]
 
 ```mermaid
 flowchart TD
-    A["Idea in italiano su branch office|home/tipo/slug"] --> B["Progettista: aim-higher e grilling"]
-    B --> C["Spec e ticket verticali con S/G/C in .scratch"]
-    C --> C2["Contrarian in Claude: premortem dei ticket"]
+    A["Idea in italiano su branch tipo/slug"] --> B["Progettista: aim-higher e grilling"]
+    B --> B2["Premortem pre-spec (su lavori complessi)"]
+    B2 --> C["Spec e ticket verticali in .scratch"]
+    C --> C2["Premortem sui ticket (se >=2 ticket e almeno un triple)"]
     C2 --> D["Tabella di consegna (rischiosi prima) e flowchart TD"]
-    D --> E["Hydrogen / Carbon / Argon: Implementa il ticket N"]
+    D --> E["Hydrogen / Carbon / Argon: Implementa il ticket N di spec"]
     E --> F{"Build, test e docs ok?"}
     F -- "No" --> E
     F -- "Sì" --> G{"Review binaria"}
-    G -- "quick (0/0/0)" --> I["Auto-verifica e check deterministici"]
-    G -- "double (almeno un 1)" --> H["3 subagenti inherit: Standards, Spec, ponytail-review"]
+    G -- "quick" --> I["Auto-verifica e check deterministici"]
+    G -- "triple" --> H["3 subagenti inherit: Standards, Spec, diff-review"]
     H --> J["Fix in una passata e ri-verifica"]
     J --> K["Answer e Walkthrough in 5 sezioni"]
     I --> K
@@ -33,10 +34,10 @@ flowchart TD
 
 | Attività | Chi | Modelli e motivo |
 |---|---|---|
-| Progettazione, grilling, spec, ticket | Progettista (Claude Team/Pro o AGY Ultra) | `Sonnet 5.5 medium` (default), `Opus` su scelte difficili o bug complessi, `Carbon Medium` in Ufficio |
-| Premortem dei ticket | Agente `contrarian` in Claude Code | `Sonnet high`, separato dal ragionamento di chi ha scritto i ticket |
-| Implementazione di un ticket | Esecutore in Antigravity | `Hydrogen Low` (`<= 30` righe meccaniche), `Hydrogen Medium` (default con test), `Carbon Medium` (Ultra) o `Argon Medium` (Pro) dove i test non vedono l'errore |
-| Review binaria e fix | Esecutore + 3 subagenti su `inherit` | `Review: quick` (`0` subagenti) su `0/0/0`; `Review: double` (`Standards`, `Spec`, `ponytail-review`) quando `S`, `G` o `C = 1` |
+| Progettazione, grilling, spec, ticket | Progettista | `Sonnet 5.5 medium` (default), `Opus` su scelte difficili o bug complessi, `Carbon Medium` su AGY |
+| Premortem su spec e ticket | Subagente `inherit` o `/swarm` (Claude e AGY) | Stesso modello del Progettista a contesto pulito, prima della spec (lavori complessi) e sui ticket (`>= 2` con almeno un `triple`) |
+| Implementazione di un ticket | Esecutore in Antigravity | `Hydrogen Low` (`<= 30` righe meccaniche), `Hydrogen Medium` (default con test), `Carbon Medium` o `Argon Medium` dove i test non vedono l'errore |
+| Review binaria e fix | Esecutore + 3 subagenti su `inherit` | `Review: quick` (`0` subagenti) su modifiche meccaniche/coperte da test; `Review: triple` (`Standards`, `Spec`, `diff-review`) su stato persistente, concorrenza/sicurezza o UI/AV |
 | Branch, prova manuale, commit e merge | Tu | Creazione/cambio branch e merge su `main` sono bloccati agli agenti |
 
 ## Cosa bloccano gli hook
@@ -93,9 +94,9 @@ Per forzare subito il controllo di rete senza attendere il turno successivo eseg
 | `DECISIONS.md` | Registro datato delle decisioni prese, superate e fonti |
 | `README.md` | Panoramica iniziale del repository |
 | `shared/global.md`, `personal/global.md` | Regole globali condivise (inclusa regola segreti) e preferenze personali |
-| `agents/contrarian.md` | Agente di premortem sui ticket in Claude Code (`antigravity: false`) |
-| `skills/flow-design/SKILL.md` | Skill universale di progettazione (`Entry Router`, `aim-higher`, grilling, spec/ticket `S/G/C`, `contrarian`, tabella) |
-| `skills/implement-ticket/SKILL.md` | Skill universale di implementazione (`Pre-flight`, edit mirati, `docs/`, review `quick` o `double` a 3 subagenti, `Answer`, Walkthrough, commit) |
+| `agents/contrarian.md` | Agente opzionale di premortem in Claude Code (`antigravity: false`) |
+| `skills/flow-design/SKILL.md` | Skill universale di progettazione (`Entry Router`, `aim-higher`, grilling, spec/ticket, premortem, tabella) |
+| `skills/implement-ticket/SKILL.md` | Skill universale di implementazione (`Pre-flight`, edit mirati, `docs/`, review `quick` o `triple` a 3 subagenti, `Answer`, Walkthrough, commit) |
 | `skills/aim-higher/SKILL.md` | Ricerca su codice, documentazione ufficiale e web per principio, causa e 2-3 opzioni |
 | `skills/junior-deep-docs/SKILL.md` | Metodo in 6 domande per documentare i moduli in `docs/` |
 | `skills/ui-ux-doctrine/SKILL.md` | Regole di usabilità e accessibilità (Nielsen, WCAG 2.2 AA, 4 stati UI) |

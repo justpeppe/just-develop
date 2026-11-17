@@ -22,7 +22,7 @@ Gli hook in `hooks/` (guardrail Claude/AGY e hook Git `pre-commit`, `commit-msg`
 
 ## Branch e Commit
 
-- **Branching:** usa 3 livelli minuscoli `office|home/<tipo>/<slug>` con `<tipo>` tra `feat`, `fix`, `refactor`, `docs`, `test`, `chore`. I branch vengono creati, cambiati e integrati su `main` (merge non-squash) dall'utente; gli agenti lavorano sul branch corrente.
+- **Branching:** usa 2 livelli minuscoli `<tipo>/<slug>` con `<tipo>` tra `feat`, `fix`, `refactor`, `docs`, `test`, `chore`. I branch vengono creati, cambiati e integrati su `main` (merge non-squash) dall'utente; gli agenti lavorano sul branch corrente.
 - **Messaggi di commit:** formato `tipo(ambito): descrizione`, una sola riga, al massimo 15 parole dopo i due punti, senza `Co-Authored-By`. `hooks/git/commit-msg` controlla il formato accettando anche `merge: ...` (1 riga) e i messaggi automatici Git/GitHub (`Merge branch/branches/pull request/remote-tracking branch/tag`, `Revert "`). Ambiti: `flow`, `hooks`, `scripts`, `skills`, `mcp`, `docs`, `tests`.
 
 ## Decisioni

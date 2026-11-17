@@ -15,7 +15,7 @@ Istruzioni per l'agente che configura la macchina dell'utente. Esegui il ramo ri
 - Prima di modificare un file di configurazione fuori da `REPO`, copialo accanto con suffisso `.bak-<data>`.
 - Nei file JSON unisci le chiavi e conserva quelle esistenti. Salta ciò che è già corretto.
 - Mostra all'utente le fonti esterne da cui scaricherai e attendi il suo ok: il repo è suo, il codice di queste fonti no.
-- Nei comandi degli hook metti i percorsi tra virgolette (`\"` nel JSON): `REPO` può contenere spazi.
+- Negli hook di Claude Code metti i percorsi tra virgolette (`\"` nel JSON); in `hooks.json` di Antigravity scrivi i percorsi con `/` e senza virgolette (`REPO` senza spazi).
 - Quando un passo dipende dal comportamento di uno strumento, leggi la sua pagina ufficiale e cita pagina e data nel report. Le pagine già controllate sono in `DECISIONS.md`. Ciò che non trovi scritto segnalalo come `non verificato`.
 - Se trovi `i-have-adhd` (`DECISIONS.md`, decisione 22), `write-docs` (`DECISIONS.md`, decisione 27) o vecchie regole locali sostituite da `shared/global.md` e `flow.md`, proponi all'utente di rimuovere plugin/file/voci obsolete e `skills/write-docs`.
 - I segreti li inserisce l'utente nella configurazione del client. Nel repo finiscono solo i nomi delle variabili.

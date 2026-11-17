@@ -5,6 +5,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import time
@@ -44,11 +45,11 @@ META_BLOCK_RE = re.compile(r'<(?:CONTEXT_SUMMARY|ADDITIONAL_METADATA)>[\s\S]*?</
 AGY_ERR_PREFIX_RE = re.compile(r'^(?:Created At:[^\n]*\n|Completed At:[^\n]*\n)+')
 STATUS_RE = re.compile(r'^(?:\*\*)?Status:(?:\*\*)?\s*(.+?)\s*$', re.I | re.M)
 LINE_REF_RE = re.compile(
-    r'(?:(?<!://)\b(?![0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\b)[A-Za-z0-9_./-]+\.(?!com\b|org\b|net\b|io\b|dev\b|ai\b|it\b|local\b|edu\b|gov\b)[A-Za-z][A-Za-z0-9]{0,7}:L?\d+\b|#L\d+(?:-L?\d+)?|\brighe\s+\d+\.\.\S+|\blines?\s+\d+[-–]\d+\b)',
+    r'(?:(?<!://)\b[A-Za-z0-9_./-]+\.(?:pas|py|js|html|css|mdx?):L?\d+\b|#L\d+(?:-L?\d+)?|\brighe\s+\d+\.\.\S+|\blines?\s+\d+[-–]\d+\b)',
     re.I,
 )
 CLOSED_STATUSES = {'resolved', 'wontfix', 'closed', 'done'}
-TICKET_REQUIRED_HEADERS = ('Metrica (S/G/C):', 'Review:', 'Esecutore:', 'Verificato:')
+TICKET_REQUIRED_HEADERS = ('Review:', 'Esecutore:')
 
 
 def redact(text):
@@ -99,6 +100,90 @@ def read_text_safe(path):
             return f.read()
     except OSError:
         return ''
+
+
+def parse_status_token(text):
+    """Return (status_value, first_token) from a Markdown Status header."""
+    m = STATUS_RE.search(text or '')
+    if not m:
+        return '', ''
+    stat_val = m.group(1).strip().lower()
+    token = re.split(r'[\s(\[:]+', stat_val)[0] if stat_val else ''
+    return stat_val, token
+
+
+def is_closed_status(text):
+    """Return True when Markdown text has a Status header in CLOSED_STATUSES."""
+    _, token = parse_status_token(text)
+    return token in CLOSED_STATUSES
+
+
+def find_line_refs(text, skip_closed=True):
+    """Return static line references in text, or [] when skip_closed=True and ticket is closed."""
+    if skip_closed and is_closed_status(text):
+        return []
+    return LINE_REF_RE.findall(text or '')
+
+
+def read_repo_text(real_root, rel_path, staged=False):
+    """Read UTF-8 text from the Git index (staged=True) or safely from disk inside real_root."""
+    rel_posix = rel_path.replace('\\', '/').lstrip('./')
+    if staged:
+        res = subprocess.run(
+            ['git', '-C', real_root, 'show', f':{rel_posix}'],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+        )
+        return res.stdout if res.returncode == 0 else ''
+    full = os.path.join(real_root, rel_posix)
+    if not (os.path.isfile(full) and is_within_root(full, real_root)):
+        return ''
+    return read_text_safe(full)
+
+
+def scan_line_refs(repo_root, paths=None, staged=False, skip_closed=True):
+    """Scan staged or disk markdown files for static line references using LINE_REF_RE and CLOSED_STATUSES."""
+    real_root = os.path.realpath(os.path.abspath(repo_root))
+    if paths is None:
+        if staged:
+            res = subprocess.run(
+                ['git', '-C', real_root, 'diff', '--cached', '--name-only', '--diff-filter=ACM'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+            )
+            candidates = [p.strip() for p in res.stdout.splitlines() if p.strip()] if res.returncode == 0 else []
+        else:
+            candidates = []
+            for fname in ('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'CODING_STANDARDS.md', 'GLOSSARY.md'):
+                if os.path.isfile(os.path.join(real_root, fname)):
+                    candidates.append(fname)
+            for sub in ('.scratch', 'docs'):
+                sdir = os.path.join(real_root, sub)
+                if os.path.isdir(sdir):
+                    for dp in sorted(glob.glob(os.path.join(sdir, '**', '*.md*'), recursive=True)):
+                        if os.path.isfile(dp) and is_within_root(dp, real_root):
+                            candidates.append(os.path.relpath(dp, real_root).replace('\\', '/'))
+    else:
+        candidates = list(paths)
+
+    findings = []
+    for raw_p in candidates:
+        rel = raw_p.replace('\\', '/').lstrip('./')
+        if not rel.lower().endswith(('.md', '.mdx')):
+            continue
+        if rel.endswith('_retro-digest.md') or rel.startswith('docs/agents/'):
+            continue
+        txt = read_repo_text(real_root, rel, staged=staged)
+        if not txt:
+            continue
+        hits = find_line_refs(txt, skip_closed=skip_closed)
+        if hits:
+            findings.append((rel, hits))
+    return findings
 
 
 def push_unique(bucket, seen, text, cap):
@@ -345,7 +430,6 @@ def scan_agy_brains(real_target, agy_dirs, cutoff_ts, stats):
 def collect_repo_v2_debt(real_target):
     """Inspect root agent files, open .scratch tickets, and docs/ for static line numbers and missing v2 fields."""
     debt = {
-        'has_mode': False,
         'has_risk': False,
         'has_checks': False,
         'root_refs': [],
@@ -362,10 +446,9 @@ def collect_repo_v2_debt(real_target):
         txt = read_text_safe(p)
         if fname == 'AGENTS.md':
             low = txt.lower()
-            debt['has_mode'] = ('repo versionato' in low or 'repo ibrido' in low)
             debt['has_risk'] = 'aree a rischio' in low
             debt['has_checks'] = 'verifiche' in low
-        hits = LINE_REF_RE.findall(txt)
+        hits = find_line_refs(txt, skip_closed=False)
         if hits:
             debt['root_refs'].append((fname, len(hits), hits[:4]))
 
@@ -378,16 +461,14 @@ def collect_repo_v2_debt(real_target):
             if rel.endswith('_retro-digest.md'):
                 continue
             txt = read_text_safe(md)
-            m_stat = STATUS_RE.search(txt)
-            stat_val = (m_stat.group(1).strip().lower() if m_stat else '')
-            stat_token = re.split(r'[\s(\[:]+', stat_val)[0] if stat_val else ''
+            stat_val, stat_token = parse_status_token(txt)
             if stat_token in CLOSED_STATUSES:
                 debt['closed_count'] += 1
                 continue
             is_spec_or_issue = rel.endswith('/spec.md') or '/issues/' in rel
             if not (is_spec_or_issue or stat_val):
                 continue
-            lrefs = LINE_REF_RE.findall(txt)
+            lrefs = find_line_refs(txt, skip_closed=False)
             missing = []
             if '/issues/' in rel:
                 for hdr in TICKET_REQUIRED_HEADERS:
@@ -405,7 +486,7 @@ def collect_repo_v2_debt(real_target):
             if rel.startswith('docs/agents/'):
                 continue
             debt['docs_total'] += 1
-            if LINE_REF_RE.search(read_text_safe(dp)):
+            if find_line_refs(read_text_safe(dp), skip_closed=False):
                 debt['docs_with_refs'] += 1
 
     return debt
@@ -455,7 +536,7 @@ def render_digest(real_target, days, stats, debt):
     lines += [
         '',
         '## Debito v2 nel repository',
-        f'- `AGENTS.md`: modalita={debt["has_mode"]} | Aree a rischio={debt["has_risk"]} | Verifiche={debt["has_checks"]}',
+        f'- `AGENTS.md`: Aree a rischio={debt["has_risk"]} | Verifiche={debt["has_checks"]}',
         f'- Ticket/spec chiusi lasciati intatti: {debt["closed_count"]}',
         f'- Pagine `docs/` da aggiornare on-touch (riferimenti di riga statici): {debt["docs_with_refs"]} / {debt["docs_total"]}',
     ]
@@ -486,12 +567,20 @@ def main():
     parser.add_argument('--out', default=None, help='Output markdown file path (atomic write; stdout if omitted)')
     parser.add_argument('--claude-dir', default=None, help='Override ~/.claude/projects directory')
     parser.add_argument('--agy-dir', action='append', default=None, help='Override Antigravity brain directory (repeatable)')
+    parser.add_argument('--check-refs', action='store_true', help='Only check markdown files for static line references and exit 1 if found')
+    parser.add_argument('--staged', action='store_true', help='With --check-refs, read staged git index contents instead of disk')
     args = parser.parse_args()
 
     real_target = os.path.realpath(os.path.abspath(args.repo))
     if not os.path.isdir(real_target):
         sys.stderr.write(f'Target directory not found: {real_target}\n')
         return 1
+
+    if args.check_refs:
+        findings = scan_line_refs(real_target, staged=args.staged)
+        for rel, hits in findings:
+            print(f'{rel}: {", ".join(hits[:5])}')
+        return 1 if findings else 0
 
     home = os.path.expanduser('~')
     claude_dir = os.path.abspath(os.path.expanduser(args.claude_dir)) if args.claude_dir else os.path.join(home, '.claude', 'projects')

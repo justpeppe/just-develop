@@ -1,6 +1,6 @@
 # Decisioni
 
-Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 (origini: `agents-config-repo` e `agents-setup-repo`) e allineamento v2 del 16 novembre 2026.
+Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 (origini: `agents-config-repo` e `agents-setup-repo`), allineamento v2 del 16 novembre 2026 e semplificazione v2.1 del 17 novembre 2026.
 
 ## 1. Il 7z è l'ossatura
 
@@ -371,6 +371,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 
 
 ## 33. Modelli Pro/Ultra reali e Review binaria `quick` | `double` con 3 subagenti `inherit`
 
+`Superata in parte da: 38 (17/11/2026)`
+
 **Data:** 2026-11-16
 
 **Scelta:** abbandonare `3.8 Flash` e scartare la fascia intermedia `Review: single`. Gli esecutori usano `Hydrogen Low` (ritocchi meccanici `<= 30` righe senza nuovo stato), `Hydrogen Medium` (default quando compilatore e test catturano gli errori), `Carbon Medium` (Ufficio/AGY Ultra) o `Argon Medium` (Casa/AGY Pro) per `C = 1` o errori invisibili ai test. La metrica `S/G/C` mappa in modo netto: `0/0/0` -> `Review: quick` (0 subagenti: auto-verifica + gate deterministico), qualsiasi bit `= 1` -> `Review: double` (sempre 3 subagenti paralleli su `inherit`: `Standards` con lettura obbligatoria di `AGENTS.md` e relative doc di stack, `Spec`, e `ponytail-review` 6 assi con checklist inline senza aprire i manuali estesi di `humanizer`/`mintlify`, passando `git diff` in sola lettura senza file temporanei `_review.diff`).
@@ -384,6 +386,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 
 **Fonti:** override esplicito dell'utente (`2026-11-16`) registrato in `.scratch/allineamento-v2/spec.md` e `issues/03-flow-and-skills.md`.
 
 ## 34. Branching a 3 livelli `office|home/<tipo>/<slug>`, guardrail `cmd /c` / branch / `*.jsonl` e fix `commit-msg`
+
+`Superata in parte da: 38 (17/11/2026)`
 
 **Data:** 2026-11-16
 
@@ -427,6 +431,8 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 
 
 ## 37. Pre-filtraggio trascrizioni `.jsonl` con `extract-repo-retro.py` e `/swarm` multi-repo su Ultra
 
+`Superata in parte da: 38 (17/11/2026)`
+
 **Data:** 2026-11-16
 
 **Scelta:** aggiungere `scripts/extract-repo-retro.py` (stdlib pura, multipiattaforma, redazione segreti) come passo preliminare di `SETUP-REPO.md` prima di ogni analisi delle trascrizioni; usare `/swarm` (`1` worker disgiunto per repo + `1` worker revisore inline sugli 8 requisiti di filtro, dato che `agents/contrarian.md` resta in Claude Code) sul piano Antigravity Ultra e normali subagenti sui piani Pro/Claude; convertire a v2 (`file + simbolo`, `S/G/C`, `Review`, `Esecutore`, `Verificato`) solo `AGENTS.md`, `CODING_STANDARDS.md` e tutti i ticket/spec non chiusi, lasciando le vecchie pagine `docs/` all'aggiornamento *on-touch*.
@@ -438,3 +444,17 @@ Cosa abbiamo portato in `just-develop` e perché. Sessione dell'8 novembre 2026 
 | Riusa le correzioni reali dalle chat passate con pochi KB di contesto e zero rischi segreti | Aggiunge uno script da mantenere allineato ai formati `.jsonl` di Claude e Antigravity |
 
 **Fonti:** `SETUP-REPO.md`, `hooks/antigravity/block-secrets-read.js` (`JSONL_MAX_BYTES`), `native_swarm/SKILL.md` (`2026-11-16`).
+
+## 38. Semplificazione v2.1: `Review: quick | triple` senza `S/G/C`, branch `<tipo>/<slug>`, premortem universale e validazione percorsi hook
+
+**Data:** 2026-11-17
+
+**Scelta:** rinominare `Review: double` in `Review: triple` (con terzo subagente `diff-review`) eliminando la metrica intermedia `S/G/C`, `Verificato:`, `SMIG` e l'etichetta `Modalità:` in `AGENTS.md`; tornare a branch a 2 livelli `<tipo>/<slug>`; adottare prompt con spec (`Implementa/Rivedi il ticket <N> di <spec>`) e passi HITL con soli indizi visibili; uniformare il premortem pre-spec e sui ticket in `flow-design` tramite subagente `inherit` o `/swarm` identico tra Claude Code e Antigravity; validare in `sync-from-claude.py --check` l'esistenza su disco dei percorsi hook e l'assenza di virgolette negli hook Antigravity su Windows.
+
+**Perché:** riduce burocrazia e duplicazioni tra `flow.md`, skill e `SETUP-REPO.md`, elimina il prefisso ridondante `office|home/` sui branch, sblocca il premortem anche progettando in Antigravity e intercetta subito percorsi hook rotti o quotati su Windows.
+
+| Pro | Contro |
+|---|---|
+| Meno attrito operativo, regole unificate tra Claude e Antigravity e prevenzione automatica dei percorsi hook rotti su Windows | Richiede il nome `<spec>` nei prompt di implementazione quando coesistono più spec con lo stesso numero di ticket |
+
+**Fonti:** `writing-for-agents`, `aim-higher`, trascrizioni analizzate con `extract-repo-retro.py` e test in `tests/run.py`, `17/11/2026`.

@@ -8,7 +8,7 @@ PY=$(command -v python || command -v python3)
 
 # Non-blocking branch naming check (safe in detached HEAD).
 if b=$(git symbolic-ref --quiet --short HEAD 2>/dev/null); then
-  if [ "$b" != "main" ] && ! printf '%s\n' "$b" | grep -Eq '^(office|home)/(feat|fix|refactor|docs|test|chore)/[a-z0-9][a-z0-9-]*$'; then
-    echo "pre-commit: avviso: il branch '$b' non segue (office|home)/<tipo>/<slug> minuscolo" >&2
+  if [ "$b" != "main" ] && ! printf '%s\n' "$b" | grep -Eq '^(feat|fix|refactor|docs|test|chore)/[a-z0-9][a-z0-9-]*$'; then
+    echo "pre-commit: avviso: il branch '$b' non segue <tipo>/<slug> minuscolo" >&2
   fi
 fi

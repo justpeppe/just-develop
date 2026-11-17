@@ -16,8 +16,8 @@ Queste cinque skill vivono in `skills/` di `just-develop` e arrivano sia a Claud
 
 | Skill | Quando si usa | Chi la lancia | Prompt d'esempio | Cosa produce |
 |---|---|---|---|---|
-| `flow-design` (`skills/flow-design/SKILL.md`) | Richiesta nuova, `/grill-with-docs`, `/to-spec`, `/to-tickets`, `/wayfinder`, `tabella dei ticket` | Agente o Tu (`/flow-design`) | `Progetta questa funzione con /flow-design: ...` | Routing iniziale, ricerca `aim-higher`, spec in `.scratch/`, ticket verticali con `S/G/C`, `contrarian`, tabella di consegna |
-| `implement-ticket` (`skills/implement-ticket/SKILL.md`) | Implementazione o review di un ticket pronto | Agente o Tu (`/implement-ticket`) | `Implementa il ticket 03` oppure `Rivedi il ticket 03` | Pre-flight, edit mirati, `docs/`, check deterministici, review `quick` o `double` (3 subagenti `inherit`), `## Answer`, Walkthrough, commit |
+| `flow-design` (`skills/flow-design/SKILL.md`) | Richiesta nuova, `/grill-with-docs`, `/to-spec`, `/to-tickets`, `/wayfinder`, `tabella dei ticket` | Agente o Tu (`/flow-design`) | `Progetta questa funzione con /flow-design: ...` | Routing iniziale, ricerca `aim-higher`, spec in `.scratch/`, ticket verticali (`quick` o `triple`), premortem su `inherit` o `/swarm`, tabella di consegna |
+| `implement-ticket` (`skills/implement-ticket/SKILL.md`) | Implementazione o review di un ticket pronto | Agente o Tu (`/implement-ticket`) | `Implementa il ticket 03 di <spec>` oppure `Rivedi il ticket 03 di <spec>` | Pre-flight, edit mirati, `docs/`, check deterministici, review `quick` o `triple` (3 subagenti `inherit`), `## Answer`, Walkthrough, commit |
 | `aim-higher` (`skills/aim-higher/SKILL.md`) | Prima di fissare un piano o quando vuoi confrontare strade da senior | Agente (via `flow-design`) o Tu | `Pensa più in grande su questo modulo` | Principio, causa, giudice esterno e 2-3 opzioni con pro, contro e fonti |
 | `junior-deep-docs` (`skills/junior-deep-docs/SKILL.md`) | Dopo modifiche a codice documentato, per spiegare un modulo o salvare risposte in `docs/` | Agente o Tu | `Spiegami come funziona questo modulo` | Pagina in `docs/` con catene runtime, stato (unità/thread), chiamate API/flag e catalogo `index.mdx` aggiornato |
 | `ui-ux-doctrine` (`skills/ui-ux-doctrine/SKILL.md`) | Progettazione, modifica o review di schermate, form, dialoghi o pagine HTML | Agente o Tu | `Controlla accessibilità e stati di questa schermata` | Verifica su limiti di Nielsen (`0.1 s`, `1 s`, `10 s`), WCAG 2.2 AA (`4.5:1`, `24 px`) e 4 stati UI |
@@ -29,10 +29,10 @@ Queste cinque skill vivono in `skills/` di `just-develop` e arrivano sia a Claud
     Sia `flow-design` sia `implement-ticket` risolvono `~` nella home reale del sistema (`$HOME` su POSIX, `%USERPROFILE%` su Windows) e aprono i `SKILL.md` tramite `Read` o `read_file`, così il flusso funziona in modo identico su Claude Code e Antigravity 2.0 senza dipendere dal tool `Skill`.
   </Step>
   <Step title="Contratto nativo di Spec e Ticket">
-    `flow-design` integra direttamente i formati di `.scratch/<work>/spec.md` e `.scratch/<work>/issues/<NN>-<slug>.md` con `Blocked by`, `Status: ready-for-agent`, raggiungibilità UI, `## Ipotesi`, criteri eseguibili per file e simbolo, `Esecutore:`, `HITL:` e la metrica `S/G/C` (`0/0/0` -> `Review: quick`; qualsiasi bit `= 1` -> `Review: double`).
+    `flow-design` integra direttamente i formati di `.scratch/<work>/spec.md` e `.scratch/<work>/issues/<NN>-<slug>.md` con `Blocked by`, `Status: ready-for-agent`, raggiungibilità UI, `## Ipotesi`, criteri eseguibili per file e simbolo, `Esecutore:`, `HITL:` e scelta diretta `Review: quick | triple (<motivo in 1 riga>)`.
   </Step>
   <Step title="Review binaria e chiusura">
-    `implement-ticket` lancia `git add -N -- . ':(exclude).scratch'` e valuta `git diff -- . ':(exclude).scratch'`. Su `Review: quick` esegue l'auto-verifica senza subagenti; su `Review: double` lancia 3 subagenti paralleli su `inherit` (`Standards` + `Spec` + `ponytail-review` a 6 assi), corregge in una passata, aggiorna `## Answer` e presenta il Walkthrough in 5 sezioni prima del commit.
+    `implement-ticket` lancia `git add -N -- . ':(exclude).scratch'` e valuta `git diff -- . ':(exclude).scratch'`. Su `Review: quick` esegue l'auto-verifica senza subagenti; su `Review: triple` lancia 3 subagenti paralleli su `inherit` (`Standards` + `Spec` + `diff-review` a 6 assi), corregge in una passata, aggiorna `## Answer` e presenta il Walkthrough in 5 sezioni prima del commit.
   </Step>
 </Steps>
 
@@ -93,7 +93,7 @@ Queste skill si installano separatamente se ti servono nei tuoi progetti e resta
 
 ## Plugin `ponytail` (opzionale, spento di default)
 
-In v2 il plugin runtime `ponytail` è disattivato sia in Claude Code (`settings.json`) sia in Antigravity (`config.json`) per risparmiare contesto fisso a ogni turno. I 6 assi di qualità di `ponytail-review` (`Bug`, `Risk`, `Scale`, `Missing test`, `Speed`, `Lean`) sono già integrati direttamente in `implement-ticket` per `Review: double`. Se riabiliti temporaneamente il plugin, ottieni sei comandi aggiuntivi:
+In v2 il plugin runtime `ponytail` è disattivato sia in Claude Code (`settings.json`) sia in Antigravity (`config.json`) per risparmiare contesto fisso a ogni turno. I 6 assi di qualità (`Bug`, `Risk`, `Scale`, `Missing test`, `Speed`, `Lean`) sono già integrati nel subagente `diff-review` di `implement-ticket` per `Review: triple`. Se riabiliti temporaneamente il plugin, ottieni sei comandi aggiuntivi:
 
 - `/ponytail`: imposta il livello di sintesi e minimalismo (`lite`, `full`, `ultra`, `off`).
 - `/ponytail-review`: review one-shot su diff non committati, branch o commit.
@@ -107,7 +107,7 @@ Alcune skill restano installate nei pacchetti condivisi ma non vanno usate al po
 
 | Skill esclusa | Perché è esclusa | Cosa usare al suo posto |
 |---|---|---|
-| `/implement` | Termina creando un commit automatico senza attendere Walkthrough, prova manuale né conferma dell'utente. | `Implementa il ticket <N>` (`implement-ticket`) |
-| `/implement-spec` | Integra su un branch tramite `git merge`, comando vietato agli agenti dai guardrail di sicurezza. | Un ticket per finestra con `implement-ticket` e merge manuale su `main` |
-| `to-spec` e `to-tickets` | I loro template omettono `Review:`, `Esecutore:`, `S/G/C` e i riferimenti verificati per file e simbolo, e rimandano a `/setup-matt-pocock-skills`. | Contratto nativo già integrato in `flow-design` |
+| `/implement` | Termina creando un commit automatico senza attendere Walkthrough, prova manuale né conferma dell'utente. | `Implementa il ticket <N> di <spec>` (`implement-ticket`) |
+| `/implement-spec` | Integra su un branch tramite `git merge`, comando vietato agli agenti dai guardrail di sicurezza. | Un ticket per sessione con `implement-ticket` e merge manuale su `main` |
+| `to-spec` e `to-tickets` | I loro template omettono `Review:`, `Esecutore:` e i riferimenti verificati per file e simbolo, e rimandano a `/setup-matt-pocock-skills`. | Contratto nativo già integrato in `flow-design` |
 | `grill-with-docs` (invocazione diretta) | Chiama il tool `Skill` di Claude Code, assente in Antigravity 2.0. | Usarlo solo come trigger verso `flow-design`, che legge `grilling` e `domain-modeling` direttamente su disco |

@@ -191,6 +191,9 @@ def check_git_and_secret_guardrails(fails):
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:\\app\\config{INI}'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:/app/{ENV}'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:/app/{ENV}.local'}}},
+            {'toolCall': {'name': 'grep_search', 'args': {'SearchPath': f'C:/app/settings{INI}'}}},
+            {'toolCall': {'name': 'grep_search', 'args': {'SearchPath': f'C:/app/{ENV}'}}},
+            {'toolCall': {'name': 'grep_search', 'args': {'SearchPath': f'C:/app/{ENV}.local'}}},
             {'toolCall': {'name': 'find_by_name', 'args': {'Pattern': f'*{INI}'}}},
             {'toolCall': {'name': 'call_mcp_tool', 'args': {'ToolName': 'some_read', 'Arguments': {'path': f'srvc:\\app\\db{INI}'}}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': big_jsonl}}},
@@ -204,12 +207,33 @@ def check_git_and_secret_guardrails(fails):
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:/app/{ENV}.sample'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:/app/{ENV}.template'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': f'C:/app/{ENV}.dist'}}},
+            {'toolCall': {'name': 'grep_search', 'args': {'SearchPath': f'C:/app/{ENV}.example'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': big_jsonl, 'StartLine': 1, 'EndLine': 50}}},
             {'toolCall': {'name': 'view_file', 'args': {'AbsolutePath': big_jsonl, 'StartLine': '1', 'EndLine': '50'}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': small_jsonl}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': big_log}}},
             {'toolCall': {'name': 'read_file', 'args': {'Path': big_txt}}},
         ]
+
+        # Parity check: Claude Read/Grep permissions.deny globs cover the same secret files as block-secrets-read.js.
+        import fnmatch
+        claude_secret_globs = [f'*{INI}', f'{ENV}', f'{ENV}.*']
+        safe_suffixes = ('.example', '.sample', '.template', '.dist')
+        for tool in ('Read', 'Grep'):
+            for rule in [f'{tool}(//**/{g})' for g in claude_secret_globs]:
+                if not rule.startswith(f'{tool}(//**/'):
+                    fails.append(f'claude parity: malformed deny rule {rule}')
+        for sample_path, should_block in (
+            (f'settings{INI}', True),
+            (f'{ENV}', True),
+            (f'{ENV}.local', True),
+            (f'{ENV}.example', False),
+            (f'settings{INI}.example', False),
+        ):
+            matched_glob = any(fnmatch.fnmatch(sample_path, g) for g in claude_secret_globs) and not sample_path.endswith(safe_suffixes)
+            js_res = sec_denied({'toolCall': {'name': 'grep_search', 'args': {'SearchPath': f'C:/app/{sample_path}'}}})
+            if matched_glob != should_block or js_res != should_block:
+                fails.append(f'claude Read/Grep parity mismatch on {sample_path}: glob={matched_glob}, js={js_res}, expected={should_block}')
 
         SEC_DENY = SEC_FILE_DENY + [{'toolCall': {'name': 'run_command', 'args': {'CommandLine': c}}} for c in SEC_CMD_DENY]
         SEC_ALLOW = SEC_FILE_ALLOW + [{'toolCall': {'name': 'run_command', 'args': {'CommandLine': c}}} for c in SEC_CMD_ALLOW]
@@ -277,10 +301,17 @@ def check_sync_from_claude(fails):
 
         fx = mk('repo')
         mk('repo', 'scripts')
+        mk('repo', 'hooks', 'claude')
+        mk('repo', 'hooks', 'antigravity')
         mk('repo', 'shared')
         mk('repo', 'personal')
         mk('repo', 'skills')
         shutil.copy(os.path.join(R, 'scripts', 'sync-from-claude.py'), os.path.join(fx, 'scripts'))
+        c_git_hook = os.path.join(fx, 'hooks', 'claude', 'block-dangerous-git.py').replace('\\', '/')
+        a_git_hook = os.path.join(fx, 'hooks', 'antigravity', 'block-dangerous-git.js').replace('\\', '/')
+        a_sec_hook = os.path.join(fx, 'hooks', 'antigravity', 'block-secrets-read.js').replace('\\', '/')
+        for hp in (c_git_hook, a_git_hook, a_sec_hook):
+            open(hp, 'w', encoding='utf-8').close()
         for rel in ('flow.md', 'shared/global.md', 'personal/global.md'):
             shutil.copy(os.path.join(R, rel), os.path.join(fx, rel))
         local = {'command': 'demo-server', 'args': ['--x'], 'env': {'ROOT': '/a'}}
@@ -295,7 +326,7 @@ def check_sync_from_claude(fails):
                 'Bash(git push *)', 'Bash(git merge *)', 'PowerShell(git push *)', 'PowerShell(git merge *)',
                 'Bash(agy *)', 'PowerShell(agy *)', f'Read(//**/*{INI})', f'Read(//**/{ENV})',
             ]},
-            'hooks': {'PreToolUse': [{'matcher': 'Bash|PowerShell', 'hooks': [{'command': 'python block-dangerous-git.py', 'onFailure': 'block'}]}]},
+            'hooks': {'PreToolUse': [{'matcher': 'Bash|PowerShell', 'hooks': [{'command': f'python -X utf8 -I "{c_git_hook}"', 'onFailure': 'block'}]}]},
         }
         json.dump(s_base, open(sj_path, 'w', encoding='utf-8'))
         mk('.gemini', 'config', 'skills', 'old')
@@ -368,8 +399,8 @@ def check_sync_from_claude(fails):
         c_base = {'mcpServers': {'local': {'type': 'stdio', **local}, 'remote': remote}}
         g_base = {'mcpServers': {'local': local, 'remote': {'serverUrl': remote['url']}}}
         h_base = {
-            'git-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command', 'hooks': [{'command': 'node block-dangerous-git.js'}]}]},
-            'secrets-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command|read_file|view_file|grep_search|list_dir|find_by_name|call_mcp_tool|mcp_.*|read_resource', 'hooks': [{'command': 'node block-secrets-read.js'}]}]},
+            'git-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command', 'hooks': [{'command': f'node {a_git_hook}'}]}]},
+            'secrets-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command|read_file|view_file|grep_search|list_dir|find_by_name|call_mcp_tool|mcp_.*|read_resource', 'hooks': [{'command': f'node {a_sec_hook}'}]}]},
         }
         json.dump(c_base, open(cj, 'w', encoding='utf-8'))
         json.dump(g_base, open(gj, 'w', encoding='utf-8'))
@@ -456,10 +487,35 @@ def check_sync_from_claude(fails):
         if sync('--check') != 1:
             fails.append('sync --check: must flag disabled guardrail in Antigravity hooks.json')
         json.dump(h_base, open(hj, 'w', encoding='utf-8'))
-        no_block = [{'matcher': 'Bash|PowerShell', 'hooks': [{'command': 'python block-dangerous-git.py'}]}]
+        no_block = [{'matcher': 'Bash|PowerShell', 'hooks': [{'command': f'python -X utf8 -I "{c_git_hook}"'}]}]
         json.dump({**s_base, 'hooks': {'PreToolUse': no_block}}, open(sj_path, 'w', encoding='utf-8'))
         if sync('--check') != 1:
             fails.append('sync --check: must flag missing onFailure=block')
+
+        # Disk path validation and Windows quoting checks for hook commands + Read secret deny.
+        missing_c = [{'matcher': 'Bash|PowerShell', 'hooks': [{'command': f'python "{c_git_hook}.missing"', 'onFailure': 'block'}]}]
+        json.dump({**s_base, 'hooks': {'PreToolUse': missing_c}}, open(sj_path, 'w', encoding='utf-8'))
+        if sync('--check') != 1 or 'not found on disk' not in run('--check').stdout:
+            fails.append('sync --check: must flag missing Claude hook script path on disk')
+        json.dump(s_base, open(sj_path, 'w', encoding='utf-8'))
+
+        missing_a = {**h_base, 'git-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command', 'hooks': [{'command': f'node {a_git_hook}.missing'}]}]}}
+        json.dump(missing_a, open(hj, 'w', encoding='utf-8'))
+        if sync('--check') != 1 or 'not found on disk' not in run('--check').stdout:
+            fails.append('sync --check: must flag missing Antigravity hook script path on disk')
+
+        if os.name == 'nt':
+            quoted_a = {**h_base, 'git-guardrails': {'enabled': True, 'PreToolUse': [{'matcher': 'run_command', 'hooks': [{'command': f'node "{a_git_hook}"'}]}]}}
+            json.dump(quoted_a, open(hj, 'w', encoding='utf-8'))
+            if sync('--check') != 1 or 'must not quote' not in run('--check').stdout:
+                fails.append('sync --check: must flag quoted Antigravity hook path on Windows')
+        json.dump(h_base, open(hj, 'w', encoding='utf-8'))
+
+        no_env_read = [r for r in s_base['permissions']['deny'] if ENV not in r]
+        json.dump({**s_base, 'permissions': {'deny': no_env_read}}, open(sj_path, 'w', encoding='utf-8'))
+        if sync('--check') != 1:
+            fails.append('sync --check: must flag missing secret Read deny rule')
+        json.dump(s_base, open(sj_path, 'w', encoding='utf-8'))
 
         for n in ('a', 'b', 'link-c', 'link-c2'):
             unlink(os.path.join(h, '.claude', 'skills', n))
@@ -485,10 +541,10 @@ def check_git_hooks(fails):
                 'fix(hooks): blocca il push\n\n# commento di git\n',
                 'merge: porta il lavoro su main\n',
                 "Merge branch 'dev'\n",
-                "Merge branch 'office/feat/hooks'\n\n# Conflicts:\n#\tflow.md\n",
-                "Merge branch 'office/feat/hooks'\n\nConflicts:\n\tflow.md\n",
+                "Merge branch 'feat/hooks'\n\n# Conflicts:\n#\tflow.md\n",
+                "Merge branch 'feat/hooks'\n\nConflicts:\n\tflow.md\n",
                 "Merge branches 'a' and 'b'\n\nConflicts:\n\tflow.md\n",
-                "Merge pull request #4 from justpeppe/office/feat/hooks\n\nAdd background sync\n",
+                "Merge pull request #4 from justpeppe/feat/hooks\n\nAdd background sync\n",
                 "Merge remote-tracking branch 'origin/main'\n",
                 "Merge tag 'v1.0.0'\n\nRelease 1.0\n",
                 'Revert "feat(flow): x"\n',
@@ -703,40 +759,40 @@ def check_pipe_lock_and_mergetree(fails):
             fails.append(f'parse_porcelain_dirty_paths: failed -uall subdir check: {sorted(dirty_sub)}')
 
         # Sibling overlaps: excludes pushed current branch without -u, detects sibling overlap and remote case collisions.
-        subprocess.run(['git', '-C', w1, 'checkout', '-b', 'office/feat/alpha'], check=True, capture_output=True)
-        open(os.path.join(w1, 'b.txt'), 'w', encoding='utf-8').write('from-office\n')
+        subprocess.run(['git', '-C', w1, 'checkout', '-b', 'feat/alpha'], check=True, capture_output=True)
+        open(os.path.join(w1, 'b.txt'), 'w', encoding='utf-8').write('from-feat\n')
         subprocess.run(['git', '-C', w1, 'add', 'b.txt'], check=True)
-        subprocess.run(['git', '-C', w1, 'commit', '-m', 'feat(ui): office'], check=True, capture_output=True)
-        subprocess.run(['git', '--git-dir', bare, 'fetch', w1, 'office/feat/alpha:refs/heads/office/feat/alpha'], check=True, capture_output=True)
+        subprocess.run(['git', '-C', w1, 'commit', '-m', 'feat(ui): alpha'], check=True, capture_output=True)
+        subprocess.run(['git', '--git-dir', bare, 'fetch', w1, 'feat/alpha:refs/heads/feat/alpha'], check=True, capture_output=True)
 
         w3 = os.path.join(td, 'w3')
         subprocess.run(['git', 'clone', bare, w3], check=True, capture_output=True)
         subprocess.run(['git', '-C', w3, 'config', 'user.email', 't@example.com'], check=True)
         subprocess.run(['git', '-C', w3, 'config', 'user.name', 'Test'], check=True)
-        subprocess.run(['git', '-C', w3, 'checkout', '-b', 'home/fix/beta'], check=True, capture_output=True)
-        open(os.path.join(w3, 'b.txt'), 'w', encoding='utf-8').write('from-home\n')
+        subprocess.run(['git', '-C', w3, 'checkout', '-b', 'fix/beta'], check=True, capture_output=True)
+        open(os.path.join(w3, 'b.txt'), 'w', encoding='utf-8').write('from-fix\n')
         subprocess.run(['git', '-C', w3, 'add', 'b.txt'], check=True)
-        subprocess.run(['git', '-C', w3, 'commit', '-m', 'fix(ui): home'], check=True, capture_output=True)
-        subprocess.run(['git', '--git-dir', bare, 'fetch', w3, 'home/fix/beta:refs/heads/home/fix/beta'], check=True, capture_output=True)
+        subprocess.run(['git', '-C', w3, 'commit', '-m', 'fix(ui): beta'], check=True, capture_output=True)
+        subprocess.run(['git', '--git-dir', bare, 'fetch', w3, 'fix/beta:refs/heads/fix/beta'], check=True, capture_output=True)
 
         res_sib = bg.check_git_repo(w3)
         overlaps = res_sib.get('sibling_overlaps') or []
-        if [o.get('branch') for o in overlaps] != ['origin/office/feat/alpha'] or 'b.txt' not in (overlaps[0].get('overlap_files') or []):
-            fails.append(f'sibling_overlaps: expected only origin/office/feat/alpha on b.txt, got {res_sib}')
-        direct_sib = bg.find_sibling_overlaps(w3, 'origin/main', {'b.txt'}, 'home/fix/beta')
-        if [o.get('branch') for o in direct_sib] != ['origin/office/feat/alpha']:
+        if [o.get('branch') for o in overlaps] != ['origin/feat/alpha'] or 'b.txt' not in (overlaps[0].get('overlap_files') or []):
+            fails.append(f'sibling_overlaps: expected only origin/feat/alpha on b.txt, got {res_sib}')
+        direct_sib = bg.find_sibling_overlaps(w3, 'origin/main', {'b.txt'}, 'fix/beta')
+        if [o.get('branch') for o in direct_sib] != ['origin/feat/alpha']:
             fails.append(f'find_sibling_overlaps: failed self-branch exclusion without -u: {direct_sib}')
 
         subprocess.run(['git', '--git-dir', bare, 'pack-refs', '--all', '--prune'], check=True, capture_output=True)
-        alpha_sha = subprocess.run(['git', '--git-dir', bare, 'rev-parse', 'refs/heads/office/feat/alpha'], capture_output=True, text=True, check=True).stdout.strip()
+        alpha_sha = subprocess.run(['git', '--git-dir', bare, 'rev-parse', 'refs/heads/feat/alpha'], capture_output=True, text=True, check=True).stdout.strip()
         packed_path = os.path.join(bare, 'packed-refs')
         packed_lines = open(packed_path, encoding='utf-8').read().splitlines()
         hdrs = [ln for ln in packed_lines if ln.startswith('#')]
-        refs = sorted([ln for ln in packed_lines if ln and not ln.startswith(('#', '^'))] + [f'{alpha_sha} refs/heads/Office/feat/alpha'], key=lambda ln: ln.split(' ', 1)[1])
+        refs = sorted([ln for ln in packed_lines if ln and not ln.startswith(('#', '^'))] + [f'{alpha_sha} refs/heads/Feat/alpha'], key=lambda ln: ln.split(' ', 1)[1])
         open(packed_path, 'w', encoding='utf-8', newline='\n').write('\n'.join(hdrs + refs) + '\n')
         cc_direct = bg.find_remote_case_collisions(w3)
         res_cc = bg.check_git_repo(w3)
-        expected_cc = [['origin/Office/feat/alpha', 'origin/office/feat/alpha']]
+        expected_cc = [['origin/Feat/alpha', 'origin/feat/alpha']]
         if cc_direct != expected_cc or res_cc.get('case_collisions') != expected_cc:
             fails.append(f'case_collisions: expected {expected_cc}, got direct={cc_direct}, repo={res_cc}')
 
@@ -807,7 +863,8 @@ def check_budgets_docs_and_antileak(fails):
 
     # Banned terms and emoji check limited to operational docs/skills (not DECISIONS.md, .scratch/, or tests/run.py).
     banned_terms = (
-        'Review: single', 'Review: flash', '3.8 Flash', 'flow-prompts.md', 'righe 1..N',
+        'Review: single', 'Review: double', 'Review: flash', '3.8 Flash', 'flow-prompts.md', 'righe 1..N',
+        'S/G/C', 'Scheda SMIG', 'office|home/',
         'Livello 1', 'Livello 2', 'Livello 3', 'Livello 4', 'Livelli di Zoom', 'Doc a 4 Livelli', 'Questa pagina documenta',
     )
     op_files = [f for f in active_files if f not in ('DECISIONS.md', 'tests/run.py') and f.endswith(('.md', '.mdx'))]
@@ -893,13 +950,13 @@ def check_extract_repo_retro(fails):
         os.makedirs(os.path.join(repo, 'docs'), exist_ok=True)
         os.makedirs(sibling_repo, exist_ok=True)
         with open(os.path.join(repo, 'AGENTS.md'), 'w', encoding='utf-8') as f:
-            f.write('Modalita: Repo ibrido\n## Aree a rischio\nsrc/app.py:42\nhttp://127.0.0.1:8000\nstream.example.com:7982\n## Verifiche\npytest\n')
+            f.write('## Aree a rischio\nsrc/app.py:42\nnode.exe:1234\nconfig.yaml:8080\nhttp://127.0.0.1:8000\nstream.example.com:7982\n## Verifiche\npytest\n')
         with open(os.path.join(repo, '.scratch', 'f1', 'issues', '01-open.md'), 'w', encoding='utf-8') as f:
             f.write('**Status:** ready-for-agent\nTocca src/app.py:12\n')
         with open(os.path.join(repo, '.scratch', 'f1', 'issues', '02-done.md'), 'w', encoding='utf-8') as f:
             f.write('**Status:** resolved (d6e85ea)\nVecchio src/old.py:99\n')
         with open(os.path.join(repo, '.scratch', 'f1', 'issues', '03-v2ok.md'), 'w', encoding='utf-8') as f:
-            f.write('**Status:** needs-triage\nMetrica (S/G/C): 0/0/0\nReview: quick\nEsecutore: Hydrogen Low\nVerificato: 2026-11-16 @ abcdef1\n')
+            f.write('**Status:** needs-triage\nReview: quick\nEsecutore: Hydrogen Low\n')
         with open(os.path.join(repo, 'docs', 'mod.md'), 'w', encoding='utf-8') as f:
             f.write('# Mod\nVedi src/app.py:77\n')
 
@@ -984,7 +1041,7 @@ def check_extract_repo_retro(fails):
             '**Antigravity:** 1 sessioni',
             'Turni utente estratti:** 2',
             '01-open.md',
-            'mancanti=Metrica (S/G/C), Review, Esecutore, Verificato',
+            'mancanti=Review, Esecutore',
             '03-v2ok.md` (status=`needs-triage`, riga_refs=0, mancanti=header v2 ok)',
             'hook deny real error',
             'rpc timeout real error',
@@ -992,9 +1049,42 @@ def check_extract_repo_retro(fails):
         ):
             if needle not in out:
                 fails.append(f'extract-repo-retro: missing {needle!r} in digest')
-        for unwanted in ('tok99887766', 'QWxhZGRpbjpvcGVu', 's3cr3tp4ss', 'abcdefgh12345', '02-done.md', '127.0.0.1:8000', 'example.com:7982', 'meta skill prompt', 'old opener outside cutoff', 'fake alert from code'):
+        for unwanted in ('tok99887766', 'QWxhZGRpbjpvcGVu', 's3cr3tp4ss', 'abcdefgh12345', '02-done.md', 'node.exe:1234', 'config.yaml:8080', '127.0.0.1:8000', 'example.com:7982', 'meta skill prompt', 'old opener outside cutoff', 'fake alert from code'):
             if unwanted in out:
                 fails.append(f'extract-repo-retro: unexpected {unwanted!r} in digest')
+
+        # Importable helper test: disk + --staged, real source extensions only, closed tickets skipped.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('extract_repo_retro', script)
+        retro_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(retro_mod)
+
+        for ext_sample in ('Main.pas:10', 'app.py:12', 'ui.js:5', 'p.html:8', 's.css:3', 'a.md:4', 'b.mdx:9'):
+            if not retro_mod.find_line_refs(f'Vedi {ext_sample}'):
+                fails.append(f'extract-repo-retro helper: missed real source ref {ext_sample}')
+        for false_pos in ('node.exe:1234', 'config.yaml:8080', '127.0.0.1:8000', 'host.com:443'):
+            if retro_mod.find_line_refs(f'Ignora {false_pos}'):
+                fails.append(f'extract-repo-retro helper: false positive on {false_pos}')
+        if retro_mod.find_line_refs('**Status:** resolved\nVecchio src/app.py:12\n'):
+            fails.append('extract-repo-retro helper: must skip closed tickets')
+
+        disk_findings = retro_mod.scan_line_refs(repo, staged=False)
+        if not any(p == 'AGENTS.md' for p, _ in disk_findings) or any(p.endswith('02-done.md') for p, _ in disk_findings):
+            fails.append(f'extract-repo-retro helper: unexpected disk scan findings {disk_findings}')
+
+        # Test --staged mode against a fresh git repo (index differs from working tree).
+        staged_repo = os.path.join(td, 'staged-repo')
+        os.makedirs(staged_repo, exist_ok=True)
+        subprocess.run(['git', 'init', '-b', 'main', staged_repo], check=True, capture_output=True)
+        subprocess.run(['git', '-C', staged_repo, 'config', 'user.email', 't@example.com'], check=True)
+        subprocess.run(['git', '-C', staged_repo, 'config', 'user.name', 'Test'], check=True)
+        doc_p = os.path.join(staged_repo, 'NOTES.md')
+        open(doc_p, 'w', encoding='utf-8').write('Vedi Main.pas:42 e node.exe:1234\n')
+        subprocess.run(['git', '-C', staged_repo, 'add', 'NOTES.md'], check=True)
+        open(doc_p, 'w', encoding='utf-8').write('Pulito senza riferimenti\n')
+        staged_findings = retro_mod.scan_line_refs(staged_repo, staged=True)
+        if staged_findings != [('NOTES.md', ['Main.pas:42'])]:
+            fails.append(f'extract-repo-retro helper: staged scan mismatch: {staged_findings}')
 
 
 def main():

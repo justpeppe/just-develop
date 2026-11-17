@@ -1,6 +1,6 @@
 ---
 name: junior-deep-docs
-description: Write or update docs/ (Mintlify + GitBook SUMMARY.md) for a junior developer: runtime chains, state fields with units/threads, and every function, API parameter, and flag. Trigger after changing documented code, when asked to document a module, or to keep a chat explanation of code.
+description: "Write or update docs/ (Mintlify + GitBook SUMMARY.md) for a junior developer: runtime chains, state fields with units/threads, and every function, API parameter, and flag. Trigger after changing documented code, when asked to document a module, or to keep a chat explanation of code."
 ---
 
 # Junior deep docs

@@ -14,28 +14,28 @@ Il modello predefinito in Claude Code (`Sonnet 5.5 medium`) per progettazione or
 Il modello più piccolo di Claude, usato dai subagenti per cercare file e simboli nel codice.
 
 **Hydrogen**:
-Il modello veloce di Google (`Gemini 4 Hydrogen`) su Antigravity Pro e Ultra, usato come esecutore di default a livello `Low` (ritocchi meccanici `<= 30` righe) o `Medium` (quando compilatore e test catturano gli errori).
+Il modello veloce di Google (`Gemini 4 Hydrogen`) su Antigravity Pro e Ultra, usato come esecutore di default a livello `Low` (ritocchi meccanici `<= 30` righe senza nuovo stato) o `Medium` (quando compilatore e test catturano gli errori).
 
 **Carbon**:
-Il modello avanzato di Google (`Gemini 4 Carbon`) su Antigravity Ultra (Ufficio), usato per ticket critici (`C = 1`, errori invisibili ai test) e come Progettista alternativo in Antigravity.
+Il modello avanzato di Google (`Gemini 4 Carbon`) su Antigravity Ultra (Ufficio), usato per ticket `Review: triple` o errori invisibili ai test e come Progettista in Antigravity.
 
 **Argon**:
-Il modello avanzato di Google (`Gemini 4 Argon`) su Antigravity Pro (Casa), usato per ticket critici (`C = 1`) dove Carbon non è disponibile.
+Il modello avanzato di Google (`Gemini 4 Argon`) su Antigravity Pro (Casa), usato per ticket `Review: triple` o errori invisibili ai test dove Carbon non è disponibile.
 
 **Progettista**:
-Il ruolo di chi esplora, fa grilling, scrive spec, ticket e diagnosi dei bug (`Sonnet 5.5` o `Opus` in Claude Code; `Carbon` su Antigravity Ultra).
+Il ruolo di chi esplora, fa grilling, scrive spec, ticket e diagnosi dei bug (`Sonnet 5.5` o `Opus` in Claude Code; `Carbon Medium` su Antigravity).
 
 **Esecutore**:
-Il ruolo di chi implementa un ticket seguendo `implement-ticket`: `Hydrogen Low|Medium`, `Carbon Medium` (Ufficio/Ultra) o `Argon Medium` (Casa/Pro), secondo la riga `Esecutore:`.
+Il ruolo di chi implementa un ticket seguendo `implement-ticket`: `Hydrogen Low|Medium`, `Carbon Medium` o `Argon Medium`, secondo la riga `Esecutore:`.
 
 **Revisore**:
-Il ruolo di chi verifica il lavoro di altri: i tre subagenti paralleli di `Review: double` (`Standards`, `Spec`, `ponytail-review` su `inherit`) e il `contrarian` sui ticket.
+Il ruolo di chi verifica il lavoro di altri: i tre subagenti paralleli di `Review: triple` (`Standards`, `Spec`, `diff-review` su `inherit`) e il subagente a contesto pulito del premortem su spec e ticket.
 
 **Antigravity**:
-L'IDE e app desktop di Google in cui esegui i ticket con `Hydrogen`, `Carbon` (Ultra) o `Argon` (Pro).
+L'IDE e app desktop di Google in cui esegui o progetti i ticket con `Hydrogen`, `Carbon` (Ultra) o `Argon` (Pro).
 
 **Subagente**:
-Un'altra istanza di AI lanciata con un contesto pulito per un compito mirato (ricerca ampia, `contrarian` o i tre assi di `Review: double`).
+Un'altra istanza di AI lanciata con un contesto pulito per un compito mirato (ricerca ampia, premortem o i tre assi di `Review: triple`).
 
 **Livello di ragionamento**:
 Quanto a fondo ragiona il modello prima di rispondere (`Low`, `Medium`, `High` in Antigravity; `medium`, `high` in Claude Code).
@@ -46,10 +46,7 @@ Quanto a fondo ragiona il modello prima di rispondere (`Low`, `Medium`, `High` i
 L'insieme di passi in `flow.md`, `flow-design` e `implement-ticket` che porta un'idea a un commit verificato.
 
 **Ingresso**:
-La regola di `flow-design` con cui il Progettista sceglie da quale percorso partire davanti a una richiesta nuova.
-
-**Via**:
-La riga `Via: /<skill>, perché <segnale>. Correggimi se sbaglio.` con cui il Progettista propone il percorso iniziale.
+La regola di `flow-design` con cui il Progettista classifica una richiesta nuova dai fatti osservati e conferma il percorso prima di procedere.
 
 **Aim-higher**:
 La ricerca iniziale su codice, documentazione ufficiale e web per spiegare principio, causa e giudice esterno proponendo 2-3 opzioni (`(Consigliata)` prima).
@@ -58,20 +55,17 @@ La ricerca iniziale su codice, documentazione ufficiale e web per spiegare princ
 L'intervista a giri in cui l'AI scioglie ogni dubbio della frontiera decisionale prima di scrivere la spec.
 
 **Wayfinder**:
-La modalità per lavori grandi o nebbiosi (`/wayfinder`): costruisce una mappa delle decisioni in `.scratch/` e le risolve una per volta.
+La modalità per lavori grandi o ambigui (`/wayfinder`): costruisce una mappa delle decisioni in `.scratch/` e le risolve una per volta.
 
 **Spec**:
 Il documento `.scratch/<lavoro>/spec.md` che fissa problema, soluzione, storie, seam di test e decisioni prima dei ticket.
 
 **Ticket**:
-Una fetta verticale piccola e autonoma salvata in `.scratch/<lavoro>/issues/<NN>-<slug>.md`, con file e simboli verificati, metrica `S/G/C`, `Review:`, `Esecutore:` e criteri di accettazione eseguibili.
+Una fetta verticale piccola e autonoma salvata in `.scratch/<lavoro>/issues/<NN>-<slug>.md`, con file e simboli verificati, `Review: quick | triple` con motivo, `Esecutore:` e criteri di accettazione eseguibili.
 _Avoid_: task generico senza contratto.
 
-**Metrica S/G/C**:
-Tre bit binari (`0|1`) assegnati dal Progettista: `S` (Stato persistente o schema dati), `G` (Forza del Giudice: `0` se compilatore e test bastano, `1` se serve prova UI/audio/runtime), `C` (Concorrenza, sicurezza, hook o script sync). `0/0/0` seleziona `Review: quick`; qualsiasi bit `= 1` seleziona `Review: double`.
-
 **Nucleo**:
-Il file compatto `flow.md` (`<= 3.000 B`) caricato a ogni turno con ruoli, modelli, lingua, branching, puntatori e checklist invariante di chiusura ticket.
+Il file compatto `flow.md` (`<= 3.000 B`) caricato a ogni turno con ruoli, modelli, scelte, branching, puntatori e checklist invariante di chiusura ticket.
 
 **Fondamenta**:
 La base che ogni repo riceve al setup (`SETUP-REPO.md`): `AGENTS.md` con comando dei test provato, aree a rischio, `docs/` e skill collegate.
@@ -84,28 +78,28 @@ _Avoid_: repo misto.
 Un repo in cui anche il materiale degli agenti è tracciato da Git (come `just-develop`); `Status: resolved` e `## Answer` entrano nello stesso commit del ticket.
 
 **Contrarian**:
-L'agente in Claude Code (`antigravity: false`) che esegue il premortem sui ticket prima dell'implementazione, portando solo obiezioni sostenute da una prova riapribile.
+L'agente opzionale in Claude Code (`agents/contrarian.md`, `antigravity: false`) per il premortem; nel flusso standard di `flow-design` il premortem gira in modo identico su Claude e Antigravity tramite subagente `inherit` o `/swarm` con brief inline.
 
 **Premortem**:
-Immaginare che i ticket implementati alla lettera abbiano già prodotto un errore per trovarne le cause prima di scrivere codice (Gary Klein, 2007).
+Immaginare che spec o ticket implementati alla lettera abbiano già prodotto un errore per trovarne le cause prima di scrivere codice (Gary Klein, 2007), riportando solo obiezioni sostenute da una prova riapribile.
 
 **Triage**:
 Valutare una segnalazione esterna o PR, verificarne la riproduzione e portarla a `ready-for-agent`, `ready-for-human`, `needs-info` o `wontfix`.
 
 **Implement**:
-La fase governata da `skills/implement-ticket/SKILL.md`: pre-flight, modifiche mirate per file e simbolo, aggiornamento `docs/`, verifiche deterministiche, review binaria, `## Answer`, Walkthrough e commit.
+La fase governata da `skills/implement-ticket/SKILL.md`: pre-flight, modifiche chirurgiche per file e simbolo, aggiornamento `docs/`, verifiche deterministiche, review binaria, `## Answer`, Walkthrough e commit.
 
-**Review binaria (`quick` e `double`)**:
-Due sole fasce di review a fine implementazione: `Review: quick` (0 subagenti, sola auto-verifica e check deterministici per ticket `0/0/0`) e `Review: double` (3 subagenti paralleli a contesto pulito su `inherit`: `Standards`, `Spec` e `ponytail-review`).
+**Review binaria (`quick` e `triple`)**:
+Due sole fasce di review a fine implementazione: `Review: quick` (0 subagenti, auto-verifica e check deterministici per modifiche meccaniche o coperte dai test) e `Review: triple` (3 subagenti paralleli a contesto pulito su `inherit`: `Standards`, `Spec` e `diff-review`).
 
 **Fix**:
-La correzione autonoma in una sola passata dei soli difetti reali e lacune `docs/` confermati sul codice dopo la review, seguita da ri-esecuzione di build e test.
+La correzione autonoma in una sola passata dei soli difetti confermati sul codice dopo la review, seguita da ri-esecuzione di build e test.
 
 **Retro**:
 La riflessione guidata (`/retro`, lanciata solo dall'utente) dopo un errore o bug reale per trasformare la causa in un hook, test o regola di `AGENTS.md`.
 
-**Branching a 3 livelli**:
-Convenzione `office|home/<tipo>/<slug>` tutta minuscola creata e integrata dall'utente con merge non-squash su `main` e cancellazione post-merge per lavorare tra due PC senza conflitti Git.
+**Branching `<tipo>/<slug>`**:
+Convenzione a 2 livelli tutta minuscola (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`) creata e integrata dall'utente con merge non-squash su `main` e `fetch.prune=true`.
 
 **Controllo silenzioso 8h/24h**:
 Meccanismo `SessionStart` non bloccante (`session_check.py` + worker detached `background_checker.py` con lock kernel OS) che controlla ogni 8 ore il repo Git (inclusi file sporchi locali e `merge-tree`) e ogni 24 ore i repository delle skill installate via `git ls-remote`.
@@ -116,10 +110,7 @@ Meccanismo `SessionStart` non bloccante (`session_check.py` + worker detached `b
 La documentazione in `docs/` (`docs.json`, `index.mdx`, `SUMMARY.md` e pagine di modulo), scritta secondo `junior-deep-docs`: cataloga i file tracciati e spiega catene di esecuzione, stato (con unità e thread), parametri e flag API.
 
 **Walkthrough**:
-Il riepilogo in 5 sezioni mostrato a fine ticket prima della prova manuale: effetto pratico, diagramma `flowchart TD`, tabella API/parametri/flag/unità, schede SMIG e prova HITL granulare.
-
-**SMIG**:
-I quattro punti della scheda di ogni passaggio chiave nel Walkthrough: **Dove siamo** (file e simbolo), **Meccanismo** (stato e variabili mosse), **Perché è fatto così**, **Occhio a / Gotcha**.
+Il riepilogo in 5 sezioni mostrato a fine ticket prima della prova manuale: effetto pratico, diagramma `flowchart TD`, tabella API/parametri/flag/unità, passaggi chiave del codice e prova HITL accessibile in linguaggio naturale.
 
 **Valutare criticamente**:
 Accompagnare ogni vera scelta architetturale con **A favore**, **Contrario** e opzione **`(Consigliata)`** basata sui fatti.
@@ -142,7 +133,7 @@ Uno script automatico eseguito da Claude, Antigravity o Git prima o dopo un'azio
 Il ponte verso strumenti esterni configurato per macchina e condiviso (quando generico) in `mcp.json`.
 
 **`.scratch/`**:
-La cartella su disco dove vivono spec, ticket e output del `contrarian`, permettendo di aprire sessioni pulite tra fasi e ticket.
+La cartella su disco dove vivono spec, ticket e output del premortem, permettendo di aprire sessioni pulite tra fasi e ticket.
 
 **`DECISIONS.md` e `NOTES.md`**:
 I file di traccia dentro `.scratch/<lavoro>/` per decisioni di progetto e note con fonti; `DECISIONS.md` alla radice registra invece le decisioni del setup stesso.
